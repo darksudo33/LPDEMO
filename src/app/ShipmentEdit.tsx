@@ -1,0 +1,241 @@
+import React, { useState, useEffect } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import { 
+  ChevronRight, 
+  Save, 
+  X, 
+  Ship, 
+  MapPin, 
+  Calendar, 
+  Hash,
+  AlertCircle
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { useMockStore } from "@/src/store/useMockStore";
+import { ShipmentStatus } from "@/src/types";
+
+export function ShipmentEdit() {
+  const { id } = useParams();
+  const navigate = useNavigate();
+  const { shipments, updateShipment } = useMockStore();
+  const shipment = shipments.find(s => s.id === id);
+
+  const [formData, setFormData] = useState({
+    trackingNumber: "",
+    containerNumber: "",
+    origin: "",
+    destination: "",
+    status: "" as ShipmentStatus,
+    estimatedDelivery: "",
+    freeTimeDays: 0
+  });
+
+  useEffect(() => {
+    if (shipment) {
+      setFormData({
+        trackingNumber: shipment.trackingNumber,
+        containerNumber: shipment.containerNumber,
+        origin: shipment.origin,
+        destination: shipment.destination,
+        status: shipment.status,
+        estimatedDelivery: shipment.estimatedDelivery,
+        freeTimeDays: shipment.freeTimeDays
+      });
+    }
+  }, [shipment]);
+
+  if (!shipment) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[400px] gap-4">
+        <AlertCircle className="w-12 h-12 text-slate-500" />
+        <p className="text-slate-400">محموله مورد نظر یافت نشد.</p>
+        <Button variant="outline" onClick={() => navigate("/shipments")}>
+          بازگشت به لیست محموله‌ها
+        </Button>
+      </div>
+    );
+  }
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    updateShipment(shipment.id, formData);
+    navigate(`/shipments/${shipment.id}`);
+  };
+
+  const statusOptions: { value: ShipmentStatus; label: string }[] = [
+    { value: "PENDING", label: "در انتظار" },
+    { value: "BOOKED", label: "رزرو شده" },
+    { value: "IN_TRANSIT", label: "در حال حمل" },
+    { value: "ARRIVED", label: "رسیده به مقصد" },
+    { value: "CUSTOMS", label: "در انتظار گمرک" },
+    { value: "CLEARED", label: "ترخیص شده" },
+    { value: "DELIVERED", label: "تحویل داده شده" },
+    { value: "CLOSED", label: "بسته شده" },
+  ];
+
+  return (
+    <div className="space-y-6" dir="rtl">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2 text-xs text-slate-500">
+          <span className="cursor-pointer hover:text-white" onClick={() => navigate("/dashboard")}>پنل مدیریت</span>
+          <ChevronRight className="w-3 h-3" />
+          <span className="cursor-pointer hover:text-white" onClick={() => navigate("/shipments")}>محموله‌ها</span>
+          <ChevronRight className="w-3 h-3" />
+          <span className="text-slate-300 font-bold">ویرایش محموله {shipment.trackingNumber}</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" className="h-9 border-slate-700 hover:bg-slate-800 text-xs px-4" onClick={() => navigate(`/shipments/${shipment.id}`)}>
+            <X className="w-3.5 h-3.5 ml-2" />
+            انصراف
+          </Button>
+          <Button className="h-9 bg-[#38bdf8] hover:bg-[#38bdf8]/90 text-[#020617] text-xs font-bold px-4" onClick={handleSubmit}>
+            <Save className="w-3.5 h-3.5 ml-2" />
+            ذخیره تغییرات
+          </Button>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-2 space-y-6">
+          <Card className="bg-[#0f172a] border-[#1e293b] rounded-3xl overflow-hidden shadow-2xl">
+            <CardHeader className="border-b border-[#1e293b] p-6">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-[#38bdf8]/10 flex items-center justify-center text-[#38bdf8]">
+                  <Save className="w-5 h-5" />
+                </div>
+                <div>
+                  <CardTitle className="text-lg font-bold text-slate-100">ویرایش اطلاعات پایه</CardTitle>
+                  <CardDescription className="text-xs text-slate-500">مشخصات اصلی و رهگیری محموله را در این بخش ویرایش کنید</CardDescription>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="p-8">
+              <form onSubmit={handleSubmit} className="space-y-8">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
+                  <div className="space-y-2">
+                    <Label className="text-xs font-bold text-slate-400 pr-1 flex items-center gap-2">
+                      <Hash className="w-3 h-3 text-[#38bdf8]" />
+                      شماره رهگیری (Tracking Number)
+                    </Label>
+                    <Input 
+                      className="bg-[#1e293b] border-[#334155] h-11 text-sm focus:ring-[#38bdf8] font-mono text-left" 
+                      value={formData.trackingNumber}
+                      onChange={e => setFormData({...formData, trackingNumber: e.target.value})}
+                      dir="ltr"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-xs font-bold text-slate-400 pr-1 flex items-center gap-2">
+                      <Ship className="w-3 h-3 text-[#38bdf8]" />
+                      شماره کانتینر
+                    </Label>
+                    <Input 
+                      className="bg-[#1e293b] border-[#334155] h-11 text-sm focus:ring-[#38bdf8] font-mono text-left" 
+                      value={formData.containerNumber}
+                      onChange={e => setFormData({...formData, containerNumber: e.target.value})}
+                      dir="ltr"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-xs font-bold text-slate-400 pr-1 flex items-center gap-2">
+                      <MapPin className="w-3 h-3 text-[#38bdf8]" />
+                      مبدا
+                    </Label>
+                    <Input 
+                      className="bg-[#1e293b] border-[#334155] h-11 text-sm focus:ring-[#38bdf8]" 
+                      value={formData.origin}
+                      onChange={e => setFormData({...formData, origin: e.target.value})}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-xs font-bold text-slate-400 pr-1 flex items-center gap-2">
+                      <MapPin className="w-3 h-3 text-[#38bdf8]" />
+                      مقصد
+                    </Label>
+                    <Input 
+                      className="bg-[#1e293b] border-[#334155] h-11 text-sm focus:ring-[#38bdf8]" 
+                      value={formData.destination}
+                      onChange={e => setFormData({...formData, destination: e.target.value})}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-xs font-bold text-slate-400 pr-1 flex items-center gap-2">
+                      <Calendar className="w-3 h-3 text-[#38bdf8]" />
+                      تاریخ تقریبی تحویل
+                    </Label>
+                    <Input 
+                      type="date"
+                      className="bg-[#1e293b] border-[#334155] h-11 text-sm focus:ring-[#38bdf8]" 
+                      value={formData.estimatedDelivery}
+                      onChange={e => setFormData({...formData, estimatedDelivery: e.target.value})}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-xs font-bold text-slate-400 pr-1 flex items-center gap-2">
+                      <Calendar className="w-3 h-3 text-[#38bdf8]" />
+                      تعداد روزهای فری تایم
+                    </Label>
+                    <Input 
+                      type="number"
+                      className="bg-[#1e293b] border-[#334155] h-11 text-sm focus:ring-[#38bdf8]" 
+                      value={formData.freeTimeDays}
+                      onChange={e => setFormData({...formData, freeTimeDays: parseInt(e.target.value) || 0})}
+                    />
+                  </div>
+                </div>
+              </form>
+            </CardContent>
+          </Card>
+        </div>
+
+        <div className="space-y-6">
+          <Card className="bg-[#0f172a] border-[#1e293b] rounded-3xl overflow-hidden shadow-2xl">
+            <CardHeader className="border-b border-[#1e293b] p-6">
+              <CardTitle className="text-sm font-bold text-slate-100">وضعیت محموله</CardTitle>
+            </CardHeader>
+            <CardContent className="p-6">
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label className="text-[10px] uppercase tracking-wider font-bold text-slate-500 pr-1">وضعیت فعلی</Label>
+                  <select 
+                    className="w-full bg-[#1e293b] border border-[#334155] rounded-xl h-11 text-xs px-3 focus:ring-1 focus:ring-[#38bdf8] outline-none text-slate-200"
+                    value={formData.status}
+                    onChange={e => setFormData({...formData, status: e.target.value as ShipmentStatus})}
+                  >
+                    {statusOptions.map(opt => (
+                      <option key={opt.value} value={opt.value}>{opt.label}</option>
+                    ))}
+                  </select>
+                </div>
+                
+                <div className="p-4 bg-emerald-500/5 rounded-2xl border border-emerald-500/20 text-center">
+                  <p className="text-[10px] text-emerald-400 font-bold mb-1 italic">وضعیت سیستم</p>
+                  <p className="text-[11px] text-slate-300">تمامی اطلاعات در حافظه موقت (Mock) ذخیره می‌شوند.</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          
+          <Card className="bg-amber-500/5 border-amber-500/20 rounded-3xl overflow-hidden">
+            <CardContent className="p-6">
+              <div className="flex items-start gap-4">
+                <div className="w-8 h-8 rounded-full bg-amber-500/20 flex items-center justify-center shrink-0">
+                  <AlertCircle className="w-4 h-4 text-amber-500" />
+                </div>
+                <div>
+                  <p className="text-xs font-bold text-amber-500 mb-1">راهنمای ویرایش</p>
+                  <p className="text-[10px] text-slate-400 leading-relaxed">
+                    تغییر شماره رهگیری باعث به‌روزرسانی کد رهگیری در تمامی بخش‌ها و پنل مشتری خواهد شد. لطفاً قبل از ذخیره، شماره کانتینر را مجدداً چک کنید.
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    </div>
+  );
+}
