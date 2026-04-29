@@ -79,9 +79,22 @@ export const useMockStore = create<MockStore>((set) => ({
     }));
   },
 
-  updateShipment: (id, updates) => set((state) => ({
-    shipments: state.shipments.map(s => s.id === id ? { ...s, ...updates } : s)
-  })),
+  updateShipment: (id, updates) => set((state) => {
+    const shipment = state.shipments.find(s => s.id === id);
+    const log: ActivityLog = {
+      id: `l${Date.now()}-ship-upd`,
+      userName: state.currentUser?.name || "System",
+      action: "ویرایش اطلاعات محموله",
+      entityType: "SHIPMENT",
+      entityId: id,
+      details: `اطلاعات محموله ${shipment?.trackingNumber} بروزرسانی شد`,
+      createdAt: new Date().toISOString()
+    };
+    return {
+      shipments: state.shipments.map(s => s.id === id ? { ...s, ...updates } : s),
+      activityLogs: [log, ...state.activityLogs]
+    };
+  }),
 
   updateShipmentStatus: (id, status) => set((state) => {
     const shipment = state.shipments.find(s => s.id === id);
@@ -117,17 +130,56 @@ export const useMockStore = create<MockStore>((set) => ({
     };
   }),
 
-  updateTask: (id, updates) => set((state) => ({
-    tasks: state.tasks.map(t => t.id === id ? { ...t, ...updates } : t)
-  })),
+  updateTask: (id, updates) => set((state) => {
+    const task = state.tasks.find(t => t.id === id);
+    const log: ActivityLog = {
+      id: `l${Date.now()}-task-upd`,
+      userName: state.currentUser?.name || "System",
+      action: "ویرایش وظیفه",
+      entityType: "TASK",
+      entityId: id,
+      details: `اطلاعات وظیفه "${task?.title}" بروزرسانی شد`,
+      createdAt: new Date().toISOString()
+    };
+    return {
+      tasks: state.tasks.map(t => t.id === id ? { ...t, ...updates } : t),
+      activityLogs: [log, ...state.activityLogs]
+    };
+  }),
 
-  updateTaskStatus: (id, status) => set((state) => ({
-    tasks: state.tasks.map(t => t.id === id ? { ...t, status } : t)
-  })),
+  updateTaskStatus: (id, status) => set((state) => {
+    const task = state.tasks.find(t => t.id === id);
+    const log: ActivityLog = {
+      id: `l${Date.now()}-task-status`,
+      userName: state.currentUser?.name || "System",
+      action: "تغییر وضعیت وظیفه",
+      entityType: "TASK",
+      entityId: id,
+      details: `وضعیت وظیفه "${task?.title}" به ${status} تغییر یافت`,
+      createdAt: new Date().toISOString()
+    };
+    return {
+      tasks: state.tasks.map(t => t.id === id ? { ...t, status } : t),
+      activityLogs: [log, ...state.activityLogs]
+    };
+  }),
 
-  deleteTask: (id) => set((state) => ({
-    tasks: state.tasks.filter(t => t.id !== id)
-  })),
+  deleteTask: (id) => set((state) => {
+    const task = state.tasks.find(t => t.id === id);
+    const log: ActivityLog = {
+      id: `l${Date.now()}-task-del`,
+      userName: state.currentUser?.name || "System",
+      action: "حذف وظیفه",
+      entityType: "TASK",
+      entityId: id,
+      details: `وظیفه "${task?.title}" از سیستم حذف شد`,
+      createdAt: new Date().toISOString()
+    };
+    return {
+      tasks: state.tasks.filter(t => t.id !== id),
+      activityLogs: [log, ...state.activityLogs]
+    };
+  }),
 
   addMessage: (msg) => set((state) => ({
     messages: [...state.messages, { ...msg, id: `m${Date.now()}`, createdAt: new Date().toISOString() }]
@@ -136,9 +188,23 @@ export const useMockStore = create<MockStore>((set) => ({
   addActivity: (log) => set((state) => ({
     activityLogs: [{ ...log, id: `l${Date.now()}`, createdAt: new Date().toISOString() }, ...state.activityLogs]
   })),
-  updateShipmentStep: (id, updates) => set((state) => ({
-    shipmentSteps: state.shipmentSteps.map(step => step.id === id ? { ...step, ...updates } : step)
-  })),
+  updateShipmentStep: (id, updates) => set((state) => {
+    const step = state.shipmentSteps.find(s => s.id === id);
+    const shipment = state.shipments.find(s => s.id === step?.shipmentId);
+    const log: ActivityLog = {
+      id: `l${Date.now()}-step`,
+      userName: state.currentUser?.name || "System",
+      action: "بروزرسانی مرحله محموله",
+      entityType: "SHIPMENT",
+      entityId: step?.shipmentId || id,
+      details: `مرحله "${step?.name}" برای محموله ${shipment?.trackingNumber} ${updates.status === 'COMPLETED' ? 'تکمیل شد' : 'بروزرسانی شد'}`,
+      createdAt: new Date().toISOString()
+    };
+    return {
+      shipmentSteps: state.shipmentSteps.map(step => step.id === id ? { ...step, ...updates } : step),
+      activityLogs: [log, ...state.activityLogs]
+    };
+  }),
   addDocument: (doc) => set((state) => {
     const newDoc = { ...doc, id: `doc${Date.now()}`, createdAt: new Date().toISOString() };
     const log: ActivityLog = {
@@ -164,15 +230,54 @@ export const useMockStore = create<MockStore>((set) => ({
   markAllNotificationsRead: () => set((state) => ({
     notifications: state.notifications.map(n => ({ ...n, isRead: true }))
   })),
-  addUser: (user) => set((state) => ({
-    users: [...state.users, { ...user, id: `u${state.users.length + 1}` }]
-  })),
-  updateUser: (id, updates) => set((state) => ({
-    users: state.users.map(u => u.id === id ? { ...u, ...updates } : u)
-  })),
-  deleteUser: (id) => set((state) => ({
-    users: state.users.filter(u => u.id !== id)
-  })),
+  addUser: (user) => set((state) => {
+    const freshUser = { ...user, id: `u${Date.now()}` };
+    const log: ActivityLog = {
+      id: `l${Date.now()}-user-add`,
+      userName: state.currentUser?.name || "System",
+      action: "افزودن کاربر جدید",
+      entityType: "USER",
+      entityId: freshUser.id,
+      details: `کاربر جدید "${user.name}" با نقش ${user.role} به سیستم اضافه شد`,
+      createdAt: new Date().toISOString()
+    };
+    return {
+      users: [...state.users, freshUser],
+      activityLogs: [log, ...state.activityLogs]
+    };
+  }),
+  updateUser: (id, updates) => set((state) => {
+    const user = state.users.find(u => u.id === id);
+    const log: ActivityLog = {
+      id: `l${Date.now()}-user-upd`,
+      userName: state.currentUser?.name || "System",
+      action: "ویرایش اطلاعات کاربر",
+      entityType: "USER",
+      entityId: id,
+      details: `اطلاعات کاربر "${user?.name}" بروزرسانی شد`,
+      createdAt: new Date().toISOString()
+    };
+    return {
+      users: state.users.map(u => u.id === id ? { ...u, ...updates } : u),
+      activityLogs: [log, ...state.activityLogs]
+    };
+  }),
+  deleteUser: (id) => set((state) => {
+    const user = state.users.find(u => u.id === id);
+    const log: ActivityLog = {
+      id: `l${Date.now()}-user-del`,
+      userName: state.currentUser?.name || "System",
+      action: "حذف کاربر",
+      entityType: "USER",
+      entityId: id,
+      details: `دسترسی کاربر "${user?.name}" به سیستم مسدود شد`,
+      createdAt: new Date().toISOString()
+    };
+    return {
+      users: state.users.filter(u => u.id !== id),
+      activityLogs: [log, ...state.activityLogs]
+    };
+  }),
   updateCurrentUser: (updates) => set((state) => ({
     currentUser: state.currentUser ? { ...state.currentUser, ...updates } : null,
     users: state.users.map(u => u.id === state.currentUser?.id ? { ...u, ...updates } : u)

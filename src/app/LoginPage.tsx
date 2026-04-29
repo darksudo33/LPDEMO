@@ -10,7 +10,10 @@ import {
   Ship,
   ChevronRight,
   Anchor,
-  Loader2
+  Loader2,
+  Truck,
+  Plane,
+  Package
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { cn } from "@/lib/utils";
@@ -58,36 +61,72 @@ export default function LoginPage() {
         />
 
         {/* Moving Grid Lines (Simulating digital logistics flow) */}
-        <div className="absolute inset-0 opacity-20 pointer-events-none">
-          {[...Array(8)].map((_, i) => (
+        <div className="absolute inset-0 opacity-15 pointer-events-none">
+          {[...Array(12)].map((_, i) => (
             <motion.div
               key={`h-${i}`}
-              initial={{ x: "-100%", opacity: 0 }}
-              animate={{ x: "200%", opacity: [0, 1, 1, 0] }}
+              initial={{ x: "-100vw" }}
+              animate={{ x: "100vw" }}
               transition={{ 
-                duration: 8 + i * 3, 
+                duration: 6 + i, 
                 repeat: Infinity, 
                 ease: "linear",
-                delay: i * 2 
+                delay: i * 0.8 
               }}
               className="absolute h-px w-full bg-gradient-to-r from-transparent via-[#38bdf8]/40 to-transparent"
-              style={{ top: `${12 + i * 12}%` }}
+              style={{ top: `${8 + i * 8}%` }}
             />
           ))}
-          {[...Array(8)].map((_, i) => (
+          {[...Array(12)].map((_, i) => (
             <motion.div
               key={`v-${i}`}
-              initial={{ y: "-100%", opacity: 0 }}
-              animate={{ y: "200%", opacity: [0, 1, 1, 0] }}
+              initial={{ y: "-100vh" }}
+              animate={{ y: "100vh" }}
               transition={{ 
-                duration: 12 + i * 4, 
+                duration: 8 + i, 
                 repeat: Infinity, 
                 ease: "linear",
-                delay: i * 2.5 
+                delay: i * 1.2 
               }}
-              className="absolute w-px h-full bg-gradient-to-b from-transparent via-[#38bdf8]/20 to-transparent"
-              style={{ right: `${10 + i * 12}%` }}
+              className="absolute w-px h-full bg-gradient-to-b from-transparent via-[#38bdf8]/30 to-transparent"
+              style={{ left: `${5 + i * 8}%` }}
             />
+          ))}
+        </div>
+
+        {/* Animated Shipment Icons */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-[0.2]">
+          {[
+            { icon: Truck, delay: 0, top: "15%", duration: 12 },
+            { icon: Package, delay: 2, top: "25%", duration: 15 },
+            { icon: Plane, delay: 4, top: "10%", duration: 8 },
+            { icon: Ship, delay: 6, top: "65%", duration: 22 },
+            { icon: Truck, delay: 8, top: "85%", duration: 14 },
+            { icon: Package, delay: 1, top: "45%", duration: 18 },
+            { icon: Plane, delay: 5, top: "35%", duration: 10 },
+            { icon: Truck, delay: 3, top: "55%", duration: 16 },
+            { icon: Package, delay: 7, top: "75%", duration: 20 },
+            { icon: Ship, delay: 9, top: "92%", duration: 25 },
+          ].map((item, idx) => (
+            <motion.div
+              key={idx}
+              initial={{ x: "120vw", opacity: 0 }}
+              animate={{ 
+                x: "-120vw",
+                opacity: [0, 1, 1, 0]
+              }}
+              transition={{
+                duration: item.duration,
+                repeat: Infinity,
+                ease: "linear",
+                delay: item.delay
+              }}
+              className="absolute text-[#38bdf8] flex items-center gap-2"
+              style={{ top: item.top }}
+            >
+              <item.icon size={24} />
+              <div className="h-px w-20 bg-gradient-to-l from-[#38bdf8]/60 to-transparent shadow-[0_0_8px_rgba(56,189,248,0.5)]" />
+            </motion.div>
           ))}
         </div>
       </div>

@@ -4,8 +4,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useMockStore } from "@/src/store/useMockStore";
-import { Package, TrendingUp, CheckCircle, Clock } from "lucide-react";
+import { Package, TrendingUp, CheckCircle, Clock, AlertTriangle } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
+import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Cell } from "recharts";
 
 const StatusBadge = ({ status }: { status: string }) => {
   const styles: Record<string, string> = {
@@ -25,6 +26,12 @@ const StatusBadge = ({ status }: { status: string }) => {
     PENDING: "در انتظار ثبت",
   };
   return <Badge className={styles[status] || ""}>{labels[status] || status}</Badge>;
+};
+
+const StatusIndicator = ({ status, days }: { status: string, days: number }) => {
+  if (status === 'DELIVERED') return <CheckCircle className="w-3 h-3 text-emerald-500" />;
+  if (days < 2) return <AlertTriangle className="w-3 h-3 text-[#ef4444] animate-pulse" />;
+  return <Clock className="w-3 h-3 text-slate-500" />;
 };
 
 export default function Dashboard() {
@@ -47,12 +54,56 @@ export default function Dashboard() {
       .slice(0, 4);
   }, [tasks, currentUser]);
 
-  const stats = [
-    { title: "کل محموله‌های فعال", value: "۱۴۸", icon: Package, change: "↑ ۱۲٪ نسبت به ماه قبل", up: true, subtitle: "کل محموله‌های فعال" },
-    { title: "در انتظار ترخیص", value: "۲۴", icon: TrendingUp, change: "۵ محموله در اولویت بالا", up: true, subtitle: "در انتظار ترخیص", color: "text-[#eab308]" },
-    { title: "وظایف امروز", value: "۰۹", icon: CheckCircle, change: "۳ مورد تکمیل شده", up: true, subtitle: "وظایف امروز", color: "text-[#38bdf8]" },
-    { title: "هشدار دموراژ", value: "۰۳", icon: Clock, change: "فوری: جریمه فعال", up: false, subtitle: "هشدار دموراژ", color: "text-[#ef4444]" },
-  ];
+  const stats = React.useMemo(() => [
+    { 
+      title: "کل محموله‌های فعال", 
+      value: shipments.filter(s => s.status !== 'DELIVERED' && s.status !== 'CLOSED').length.toLocaleString('fa-IR'), 
+      icon: Package, 
+      change: `↑ ${Math.floor(Math.random() * 5 + 2)}٪ نسبت به هفته پیش`, 
+      up: true, 
+      subtitle: "محموله‌های در جریان" 
+    },
+    { 
+      title: "در انتظار ترخیص", 
+      value: shipments.filter(s => s.status === 'CUSTOMS').length.toLocaleString('fa-IR'), 
+      icon: TrendingUp, 
+      change: `${shipments.filter(s => s.status === 'CUSTOMS').length} مورد در گمرک`, 
+      up: true, 
+      subtitle: "در حال پردازش", 
+      color: "text-[#eab308]" 
+    },
+    { 
+      title: "وظایف امروز", 
+      value: tasks.filter(t => t.status !== 'DONE').length.toLocaleString('fa-IR'), 
+      icon: CheckCircle, 
+      change: `${tasks.filter(t => t.status === 'DONE').length} مورد تکمیل شده`, 
+      up: true, 
+      subtitle: "وظایف باز", 
+      color: "text-[#38bdf8]" 
+    },
+    { 
+      title: "هشدار دموراژ", 
+      value: shipments.filter(s => s.status === 'ARRIVED' && (s.freeTimeDays || 14) < 5).length.toLocaleString('fa-IR'), 
+      icon: Clock, 
+      change: "نیازمند پیگیری فوری", 
+      up: false, 
+      color: "text-[#ef4444]" 
+    },
+  ], [shipments, tasks]);
+
+  const chartData = React.useMemo(() => {
+    const counts: Record<string, number> = {};
+    shipments.forEach(s => {
+      counts[s.status] = (counts[s.status] || 0) + 1;
+    });
+    return [
+      { name: 'حمل', value: counts['IN_TRANSIT'] || 0, color: '#38bdf8' },
+      { name: 'بندر', value: counts['ARRIVED'] || 0, color: '#10b981' },
+      { name: 'گمرک', value: counts['CUSTOMS'] || 0, color: '#f59e0b' },
+      { name: 'ترخیص', value: counts['CLEARED'] || 0, color: '#8b5cf6' },
+      { name: 'تحویل', value: counts['DELIVERED'] || 0, color: '#059669' },
+    ];
+  }, [shipments]);
 
   const criticalShipments = React.useMemo(() => {
     // For demo purposes, we'll assign some random "days remaining" to make it look active
@@ -126,7 +177,7 @@ export default function Dashboard() {
                       <div className="bg-[#020617] rounded-xl p-3 border border-[#1e293b]">
                         <div className="flex items-center justify-between mb-2">
                           <span className="text-[9px] font-bold text-slate-500 uppercase tracking-tight">زمان باقی‌مانده</span>
-                          <Clock className="w-3 h-3 text-[#ef4444] animate-pulse" />
+                          <StatusIndicator status={shipment.status} days={days} />
                         </div>
                         <div className="flex items-baseline gap-1">
                           <span className="text-2xl font-black text-[#f8fafc] tabular-nums">{days}</span>
@@ -140,12 +191,12 @@ export default function Dashboard() {
                       <div className="space-y-1.5 pt-1">
                         <div className="flex justify-between text-[8px] font-bold uppercase tracking-wider text-slate-500">
                           <span>مصرف فری‌تایم</span>
-                          <span className={cn(progress > 80 ? "text-red-500" : "text-[#38bdf8]")}>{Math.round(progress)}%</span>
+                          <span className={cn(progress > 80 ? "text-red-500" : "text-[#38bdf8]")}>{Math.min(100, Math.round(progress))}%</span>
                         </div>
                         <div className="h-1.5 bg-[#1e293b] rounded-full overflow-hidden">
                           <div 
                             className={cn("h-full transition-all duration-1000", progress > 80 ? "bg-red-500" : "bg-[#38bdf8]")}
-                            style={{ width: `${progress}%` }}
+                            style={{ width: `${Math.min(100, Math.max(0, progress))}%` }}
                           />
                         </div>
                       </div>
@@ -165,50 +216,67 @@ export default function Dashboard() {
             </div>
           </div>
 
-          <Card className="bg-[#0f172a] border-[#1e293b] rounded-xl overflow-hidden flex flex-col min-h-0">
-            <CardHeader className="p-4 border-b border-[#1e293b] flex flex-row items-center justify-between space-y-0">
-              <CardTitle className="text-sm font-bold text-[#f8fafc]">بارهای اخیر</CardTitle>
-              <span className="text-[11px] text-[#38bdf8] font-bold cursor-pointer hover:underline" onClick={() => navigate('/shipments')}>مشاهده همه</span>
-            </CardHeader>
-            <CardContent className="p-0">
-              <div className="overflow-x-auto">
-                <div className="min-w-[600px]">
-                  <table className="w-full text-right text-[11px]">
-                    <thead>
-                      <tr className="border-b border-[#1e293b] bg-[#1e293b]/20">
-                        <th className="px-4 py-3 font-bold text-[#94a3b8]">رهگیری</th>
-                        <th className="px-4 py-3 font-bold text-[#94a3b8]">مشتری</th>
-                        <th className="px-4 py-3 font-bold text-[#94a3b8]">مسیر</th>
-                        <th className="px-4 py-3 font-bold text-[#94a3b8]">وضعیت</th>
-                        <th className="px-4 py-3 font-bold text-[#94a3b8]">بروزرسانی</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-[#1e293b]">
-                      {recentShipments.map((shipment) => (
-                        <tr 
-                          key={shipment.id} 
-                          className="hover:bg-[#1e293b]/30 transition-all cursor-pointer group"
-                          onClick={() => navigate(`/shipments/${shipment.id}`)}
-                        >
-                          <td className="px-4 py-3 font-mono text-[#38bdf8] font-black">{shipment.trackingNumber}</td>
-                          <td className="px-4 py-3 text-slate-300 font-bold">{shipment.customerName}</td>
-                          <td className="px-4 py-3 text-slate-400">
-                            <span className="text-slate-200">{shipment.origin}</span>
-                            <span className="mx-1 opacity-30">←</span>
-                            <span className="text-slate-200">{shipment.destination}</span>
-                          </td>
-                          <td className="px-4 py-3">
-                            <StatusBadge status={shipment.status} />
-                          </td>
-                          <td className="px-4 py-3 text-slate-500 font-mono text-[10px]">{shipment.createdAt}</td>
-                        </tr>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Card className="bg-[#0f172a] border-[#1e293b] rounded-xl overflow-hidden p-4 flex flex-col h-[280px]">
+              <CardTitle className="text-xs font-black text-slate-400 uppercase tracking-widest mb-6">توزیع وضعیت محموله‌ها</CardTitle>
+              <div className="flex-1 w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={chartData} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
+                    <XAxis 
+                      dataKey="name" 
+                      axisLine={false} 
+                      tickLine={false} 
+                      tick={{ fill: '#64748b', fontSize: 10, fontWeight: 700 }}
+                    />
+                    <YAxis 
+                      axisLine={false} 
+                      tickLine={false} 
+                      tick={{ fill: '#64748b', fontSize: 10 }}
+                    />
+                    <Tooltip 
+                      cursor={{ fill: 'rgba(56, 189, 248, 0.05)' }}
+                      contentStyle={{ backgroundColor: '#020617', border: '1px solid #1e293b', borderRadius: '12px', fontSize: '12px' }}
+                    />
+                    <Bar dataKey="value" radius={[4, 4, 0, 0]} barSize={32}>
+                      {chartData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.color} fillOpacity={0.8} />
                       ))}
-                    </tbody>
-                  </table>
-                </div>
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
               </div>
-            </CardContent>
-          </Card>
+            </Card>
+
+            <Card className="bg-[#0f172a] border-[#1e293b] rounded-xl overflow-hidden flex flex-col h-[280px]">
+              <CardHeader className="p-4 border-b border-[#1e293b] flex flex-row items-center justify-between space-y-0">
+                <CardTitle className="text-sm font-bold text-[#f8fafc]">بارهای اخیر</CardTitle>
+                <span className="text-[11px] text-[#38bdf8] font-bold cursor-pointer hover:underline" onClick={() => navigate('/shipments')}>مشاهده همه</span>
+              </CardHeader>
+              <CardContent className="p-0 overflow-y-auto flex-1">
+                <div className="overflow-x-auto">
+                  <div className="min-w-[400px]">
+                    <table className="w-full text-right text-[11px]">
+                      <tbody className="divide-y divide-[#1e293b]">
+                        {recentShipments.map((shipment) => (
+                          <tr 
+                            key={shipment.id} 
+                            className="hover:bg-[#1e293b]/30 transition-all cursor-pointer group"
+                            onClick={() => navigate(`/shipments/${shipment.id}`)}
+                          >
+                            <td className="px-4 py-3 font-mono text-[#38bdf8] font-black">{shipment.trackingNumber}</td>
+                            <td className="px-4 py-3 text-slate-300 font-bold">{shipment.customerName}</td>
+                            <td className="px-4 py-3">
+                              <StatusBadge status={shipment.status} />
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         </div>
 
         <div className="lg:col-span-1 space-y-4">

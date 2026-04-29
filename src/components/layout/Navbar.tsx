@@ -5,7 +5,7 @@
 
 import React, { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { LayoutDashboard, Ship, Users, CheckSquare, MessageSquare, MapPin, ChevronRight, ChevronLeft, LogOut, Search, Bell, FileText, History, Settings as SettingsIcon, Menu } from "lucide-react";
+import { LayoutDashboard, Ship, Users, CheckSquare, MessageSquare, MapPin, ChevronRight, ChevronLeft, LogOut, Search, Bell, FileText, History, Settings as SettingsIcon, Menu, ShieldCheck } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useMockStore } from "@/src/store/useMockStore";
 import { Button } from "@/components/ui/button";
@@ -28,9 +28,10 @@ const sidebarItems = [
   { icon: LayoutDashboard, label: "داشبورد", path: "/dashboard" },
   { icon: Ship, label: "محموله‌ها", path: "/shipments" },
   { icon: Users, label: "مشتریان", path: "/customers" },
-  { icon: History, label: "مدیریت کاربران", path: "/management", ceoOnly: true },
+  { icon: ShieldCheck, label: "مدیریت کاربران", path: "/management", ceoOnly: true },
   { icon: CheckSquare, label: "وظایف", path: "/tasks" },
   { icon: FileText, label: "اسناد", path: "/documents" },
+  { icon: History, label: "تغییرات", path: "/changelog" },
   { icon: MessageSquare, label: "چت", path: "/chat" },
   { icon: MapPin, label: "رهگیری", path: "/track" },
 ];
@@ -260,7 +261,7 @@ export const TopBar = () => {
               </Button>
             }
           />
-          <DropdownMenuContent className="w-56 bg-slate-900 border-slate-800 p-1" align="end" forceMount>
+          <DropdownMenuContent className="w-56 bg-slate-900 border-slate-800 p-1" align="end">
              <DropdownMenuGroup className="p-2 border-b border-slate-800">
                 <p className="text-[11px] font-bold text-slate-200">{currentUser?.name}</p>
                 <p className="text-[9px] text-slate-500">{currentUser?.email}</p>

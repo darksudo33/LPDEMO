@@ -35,7 +35,8 @@ import {
   ChevronLeft,
   Edit,
   Settings,
-  X
+  X,
+  Check
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -310,6 +311,8 @@ export default function ShipmentDetail() {
 
   const [isAssignDialogOpen, setIsAssignDialogOpen] = useState(false);
   const [selectedStep, setSelectedStep] = useState<any>(null);
+  const [isNoteDialogOpen, setIsNoteDialogOpen] = useState(false);
+  const [editingNote, setEditingNote] = useState("");
   const [assignForm, setAssignForm] = useState({
     userId: users[0]?.id || "",
     priority: "MEDIUM" as const,
@@ -624,8 +627,46 @@ export default function ShipmentDetail() {
                                   )}
                                 </div>
                                 
-                                <div className="flex items-center justify-start sm:justify-end gap-1.5 shrink-0 border-t border-[#1e293b]/50 sm:border-t-0 pt-2.5 sm:pt-0">
-                                   {EMPLOYEE_MANAGED_STEPS.includes(step.name) && step.status !== "COMPLETED" && (
+                                   <div className="flex items-center justify-start sm:justify-end gap-1.5 shrink-0 border-t border-[#1e293b]/50 sm:border-t-0 pt-2.5 sm:pt-0">
+                                     <Button 
+                                       variant="ghost" 
+                                       size="icon" 
+                                       className="h-6 w-6 md:h-8 md:w-8 text-slate-600 hover:text-[#38bdf8] rounded-lg"
+                                       onClick={() => {
+                                         setSelectedStep(step);
+                                         setEditingNote(step.notes || "");
+                                         setIsNoteDialogOpen(true);
+                                       }}
+                                     >
+                                       <FileText className="w-3.5 h-3.5 md:w-4 md:h-4" />
+                                     </Button>
+
+                                     {step.status !== "COMPLETED" ? (
+                                       <Button 
+                                         variant="ghost" 
+                                         size="sm" 
+                                         className="h-6 md:h-8 text-[8px] md:text-[11px] font-black text-emerald-400 hover:bg-emerald-400/10 px-2 md:px-3 rounded-lg border border-emerald-400/20"
+                                         onClick={() => updateShipmentStep(step.id, { 
+                                           status: "COMPLETED", 
+                                           completedAt: new Date().toLocaleDateString("fa-IR") 
+                                         })}
+                                       >
+                                         <Check className="w-3 md:w-3.5 h-3 md:h-3.5 ml-1 md:ml-1.5" />
+                                         تکمیل مرحله
+                                       </Button>
+                                     ) : (
+                                       <Button 
+                                         variant="ghost" 
+                                         size="sm" 
+                                         className="h-6 md:h-8 text-[8px] md:text-[11px] font-black text-slate-500 hover:bg-slate-500/10 px-2 md:px-3 rounded-lg"
+                                         onClick={() => updateShipmentStep(step.id, { status: "IN_PROGRESS" })}
+                                       >
+                                         <Clock className="w-3 md:w-3.5 h-3 md:h-3.5 ml-1 md:ml-1.5" />
+                                         بازنشانی
+                                       </Button>
+                                     )}
+                                     
+                                     {EMPLOYEE_MANAGED_STEPS.includes(step.name) && step.status !== "COMPLETED" && (
                                      <Button 
                                        variant="ghost" 
                                        size="sm" 
@@ -853,6 +894,44 @@ export default function ShipmentDetail() {
             </Button>
             <Button className="flex-1 bg-[#38bdf8] text-[#020617] font-extrabold rounded-xl h-11" onClick={handleAssignTask}>
               ثبت و ارجاع وظیفه
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Note Dialog */}
+      <Dialog open={isNoteDialogOpen} onOpenChange={setIsNoteDialogOpen}>
+        <DialogContent className="bg-[#0f172a] border-[#1e293b] text-[#f8fafc] text-right sm:max-w-md" dir="rtl">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-bold flex items-center gap-2">
+              <FileText className="w-5 h-5 text-[#38bdf8]" />
+              ثبت گزارش مرحله
+            </DialogTitle>
+            <DialogDescription className="text-slate-400 text-xs text-right">
+              یادداشت یا گزارش عملیاتی برای مرحله <span className="text-[#38bdf8] font-bold">{selectedStep?.name}</span>
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4">
+            <Label className="text-[11px] font-bold text-slate-400 pr-1 mb-2 block">متن یادداشت</Label>
+            <textarea 
+              className="w-full bg-[#1e293b] border border-[#334155] rounded-xl p-4 text-xs min-h-[120px] outline-none focus:ring-1 focus:ring-[#38bdf8] text-slate-200"
+              placeholder="شرح عملیات، مشکلات یا توضیحات تکمیلی را اینجا وارد کنید..."
+              value={editingNote}
+              onChange={(e) => setEditingNote(e.target.value)}
+            />
+          </div>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" className="flex-1 border-[#334155] hover:bg-[#1e293b] text-xs h-11" onClick={() => setIsNoteDialogOpen(false)}>انصراف</Button>
+            <Button 
+              className="flex-1 bg-[#38bdf8] text-[#020617] font-extrabold text-xs h-11"
+              onClick={() => {
+                if (selectedStep) {
+                  updateShipmentStep(selectedStep.id, { notes: editingNote });
+                }
+                setIsNoteDialogOpen(false);
+              }}
+            >
+              ثبت و بروزرسانی
             </Button>
           </DialogFooter>
         </DialogContent>
