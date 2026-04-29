@@ -4,8 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useMockStore } from "@/src/store/useMockStore";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from "recharts";
-import { Package, TrendingUp, CheckCircle, Users, ArrowUpRight, ArrowDownRight, Clock } from "lucide-react";
+import { Package, TrendingUp, CheckCircle, Clock } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 
 const StatusBadge = ({ status }: { status: string }) => {
@@ -31,7 +30,6 @@ const StatusBadge = ({ status }: { status: string }) => {
 export default function Dashboard() {
   const navigate = useNavigate();
   const shipments = useMockStore(state => state.shipments);
-  const customers = useMockStore(state => state.customers);
   const tasks = useMockStore(state => state.tasks);
   const currentUser = useMockStore(state => state.currentUser);
 
@@ -49,20 +47,30 @@ export default function Dashboard() {
       .slice(0, 4);
   }, [tasks, currentUser]);
 
-  const chartData = [
-    { name: "فروردین", value: 12 },
-    { name: "اردیبهشت", value: 19 },
-    { name: "خرداد", value: 15 },
-    { name: "تیر", value: 22 },
-    { name: "مرداد", value: 30 },
-  ];
-
   const stats = [
     { title: "کل محموله‌های فعال", value: "۱۴۸", icon: Package, change: "↑ ۱۲٪ نسبت به ماه قبل", up: true, subtitle: "کل محموله‌های فعال" },
     { title: "در انتظار ترخیص", value: "۲۴", icon: TrendingUp, change: "۵ محموله در اولویت بالا", up: true, subtitle: "در انتظار ترخیص", color: "text-[#eab308]" },
     { title: "وظایف امروز", value: "۰۹", icon: CheckCircle, change: "۳ مورد تکمیل شده", up: true, subtitle: "وظایف امروز", color: "text-[#38bdf8]" },
     { title: "هشدار دموراژ", value: "۰۳", icon: Clock, change: "فوری: جریمه فعال", up: false, subtitle: "هشدار دموراژ", color: "text-[#ef4444]" },
   ];
+
+  const criticalShipments = React.useMemo(() => {
+    // For demo purposes, we'll assign some random "days remaining" to make it look active
+    const daysMap: Record<string, number> = {
+      's2': 1.5, // 1 day, 12 hours
+      's3': 3.2, // 3 days, 4 hours
+      's1': 5.8  // 5 days, 19 hours
+    };
+
+    return shipments
+      .filter(s => ['ARRIVED', 'CUSTOMS', 'IN_TRANSIT'].includes(s.status))
+      .map(s => ({
+        ...s,
+        daysRemaining: daysMap[s.id] || (Math.random() * 10 + 5)
+      }))
+      .sort((a, b) => a.daysRemaining - b.daysRemaining)
+      .slice(0, 3);
+  }, [shipments]);
 
   return (
     <div className="p-3 md:p-5 space-y-4 font-sans">
@@ -86,43 +94,76 @@ export default function Dashboard() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <div className="lg:col-span-2 space-y-4">
-          <Card className="bg-[#0f172a] border-[#1e293b] rounded-xl overflow-hidden flex flex-col min-h-0">
-            <CardHeader className="p-4 border-b border-[#1e293b] flex flex-row items-center justify-between space-y-0">
-              <CardTitle className="text-xs md:text-sm font-bold text-[#f8fafc]">روند بارگیری ماهانه</CardTitle>
-              <div className="flex items-center gap-2">
-                 <span className="flex items-center gap-1 text-[10px] text-slate-500"><div className="w-2 h-2 rounded-full bg-[#38bdf8]" /> محموله‌ها</span>
-              </div>
-            </CardHeader>
-            <CardContent className="p-4 h-[200px] md:h-[250px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={chartData}>
-                  <XAxis 
-                    dataKey="name" 
-                    axisLine={false} 
-                    tickLine={false} 
-                    tick={{ fill: '#64748b', fontSize: 10, fontWeight: 700 }}
-                  />
-                  <Tooltip 
-                    contentStyle={{ backgroundColor: '#0f172a', borderColor: '#1e293b', borderRadius: '12px', fontSize: '11px', textAlign: 'right' }}
-                    itemStyle={{ color: '#38bdf8' }}
-                  />
-                  <Bar 
-                    dataKey="value" 
-                    radius={[4, 4, 0, 0]} 
-                    fill="#38bdf8"
-                    barSize={20}
-                  >
-                    {chartData.map((entry, index) => (
-                      <Cell 
-                        key={`cell-${index}`} 
-                        fill={index === chartData.length - 1 ? '#38bdf8' : '#38bdf833'} 
-                      />
-                    ))}
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
-            </CardContent>
-          </Card>
+          {/* Critical Shipments Section */}
+          <div className="space-y-3">
+            <div className="flex items-center justify-between px-1">
+              <h2 className="text-sm md:text-base font-black text-[#f8fafc] flex items-center gap-2">
+                <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
+                محموله‌های بحرانی (زمان رو به اتمام)
+              </h2>
+              <span className="text-[10px] text-slate-500 font-bold">بر پایه زمان فری‌تایم باقی‌مانده</span>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              {criticalShipments.map((shipment) => {
+                const days = Math.floor(shipment.daysRemaining);
+                const hours = Math.floor((shipment.daysRemaining % 1) * 24);
+                const progress = Math.max(10, 100 - (shipment.daysRemaining / (shipment.freeTimeDays || 14)) * 100);
+                
+                return (
+                  <Card key={shipment.id} className="bg-[#0f172a] border-[#1e293b] rounded-2xl overflow-hidden hover:border-[#38bdf8]/30 transition-all border-b-4 border-b-[#ef4444]/20">
+                    <CardContent className="p-4 flex flex-col gap-3">
+                      <div className="flex items-center justify-between">
+                        <Badge className="bg-[#1e293b] text-[#38bdf8] border-none text-[9px] font-black">{shipment.trackingNumber}</Badge>
+                        <StatusBadge status={shipment.status} />
+                      </div>
+                      
+                      <div className="space-y-1">
+                        <p className="text-[10px] text-slate-500 font-bold">مشتری</p>
+                        <p className="text-xs font-black text-slate-200 truncate">{shipment.customerName}</p>
+                      </div>
+
+                      <div className="bg-[#020617] rounded-xl p-3 border border-[#1e293b]">
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-[9px] font-bold text-slate-500 uppercase tracking-tight">زمان باقی‌مانده</span>
+                          <Clock className="w-3 h-3 text-[#ef4444] animate-pulse" />
+                        </div>
+                        <div className="flex items-baseline gap-1">
+                          <span className="text-2xl font-black text-[#f8fafc] tabular-nums">{days}</span>
+                          <span className="text-[10px] font-bold text-slate-500">روز</span>
+                          <span className="mx-1 text-slate-700">•</span>
+                          <span className="text-xl font-black text-[#f8fafc] tabular-nums">{hours}</span>
+                          <span className="text-[10px] font-bold text-slate-500">ساعت</span>
+                        </div>
+                      </div>
+
+                      <div className="space-y-1.5 pt-1">
+                        <div className="flex justify-between text-[8px] font-bold uppercase tracking-wider text-slate-500">
+                          <span>مصرف فری‌تایم</span>
+                          <span className={cn(progress > 80 ? "text-red-500" : "text-[#38bdf8]")}>{Math.round(progress)}%</span>
+                        </div>
+                        <div className="h-1.5 bg-[#1e293b] rounded-full overflow-hidden">
+                          <div 
+                            className={cn("h-full transition-all duration-1000", progress > 80 ? "bg-red-500" : "bg-[#38bdf8]")}
+                            style={{ width: `${progress}%` }}
+                          />
+                        </div>
+                      </div>
+
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className="w-full text-[10px] font-black h-8 hover:bg-[#38bdf8]/10 text-[#38bdf8] rounded-lg mt-1"
+                        onClick={() => navigate(`/shipments/${shipment.id}`)}
+                      >
+                        بررسی وضعیت و ترخیص
+                      </Button>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+          </div>
 
           <Card className="bg-[#0f172a] border-[#1e293b] rounded-xl overflow-hidden flex flex-col min-h-0">
             <CardHeader className="p-4 border-b border-[#1e293b] flex flex-row items-center justify-between space-y-0">
