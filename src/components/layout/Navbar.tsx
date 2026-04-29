@@ -51,7 +51,7 @@ export const Sidebar = () => {
       collapsed ? "w-20" : "w-[220px]"
     )}>
       <div className="px-6 mb-8 flex items-center justify-between font-sans">
-        {!collapsed && <span className="text-lg font-bold text-[#38bdf8] tracking-tight">⚓ لوژی‌شارپ</span>}
+        {!collapsed && <span className="text-lg font-bold text-[#38bdf8] tracking-tight">⚓ لجستیک پلاس</span>}
         <Button variant="ghost" size="icon" onClick={() => setCollapsed(!collapsed)} className="text-slate-400">
           {collapsed ? <ChevronLeft /> : <ChevronRight />}
         </Button>
@@ -130,7 +130,7 @@ export const TopBar = () => {
           } />
           <SheetContent side="right" className="bg-[#0f172a] border-[#1e293b] p-0 w-[240px] text-right font-sans" dir="rtl">
             <SheetHeader className="p-6 border-b border-[#1e293b]">
-              <SheetTitle className="text-lg font-bold text-[#38bdf8] text-right">⚓ لوژی‌شارپ</SheetTitle>
+              <SheetTitle className="text-lg font-bold text-[#38bdf8] text-right">⚓ لجستیک پلاس</SheetTitle>
             </SheetHeader>
             <nav className="p-2 space-y-1">
               {menuItems.map((item) => (
