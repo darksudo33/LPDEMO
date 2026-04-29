@@ -27,10 +27,14 @@ interface MockStore {
   addMessage: (message: Omit<Message, "id" | "createdAt">) => void;
   addActivity: (log: Omit<ActivityLog, "id" | "createdAt">) => void;
   updateShipmentStep: (id: string, updates: Partial<ShipmentStep>) => void;
+  addUser: (user: Omit<User, "id">) => void;
+  updateUser: (id: string, updates: Partial<User>) => void;
+  deleteUser: (id: string) => void;
   addDocument: (document: Omit<ShipmentDocument, "id" | "createdAt">) => void;
   deleteDocument: (id: string) => void;
   markNotificationRead: (id: string) => void;
   markAllNotificationsRead: () => void;
+  updateCurrentUser: (updates: Partial<User>) => void;
 }
 
 export const useMockStore = create<MockStore>((set) => ({
@@ -159,5 +163,18 @@ export const useMockStore = create<MockStore>((set) => ({
   })),
   markAllNotificationsRead: () => set((state) => ({
     notifications: state.notifications.map(n => ({ ...n, isRead: true }))
+  })),
+  addUser: (user) => set((state) => ({
+    users: [...state.users, { ...user, id: `u${state.users.length + 1}` }]
+  })),
+  updateUser: (id, updates) => set((state) => ({
+    users: state.users.map(u => u.id === id ? { ...u, ...updates } : u)
+  })),
+  deleteUser: (id) => set((state) => ({
+    users: state.users.filter(u => u.id !== id)
+  })),
+  updateCurrentUser: (updates) => set((state) => ({
+    currentUser: state.currentUser ? { ...state.currentUser, ...updates } : null,
+    users: state.users.map(u => u.id === state.currentUser?.id ? { ...u, ...updates } : u)
   })),
 }));

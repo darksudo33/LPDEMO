@@ -6,9 +6,11 @@
 import React from "react";
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { Sidebar, TopBar } from "./components/layout/Navbar";
+import { MobileBottomNav } from "./components/layout/MobileBottomNav";
 import { useMockStore } from "./store/useMockStore";
 import LoginPage from "./app/LoginPage";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { Toaster } from "sonner";
 
 import Dashboard from "./app/Dashboard";
 import Shipments from "./app/Shipments";
@@ -16,6 +18,9 @@ import Customers from "./app/Customers";
 import Tasks from "./app/Tasks";
 import Chat from "./app/Chat";
 import Track from "./app/Track";
+import Profile from "./app/Profile";
+import Settings from "./app/Settings";
+import UserManagement from "./app/UserManagement";
 import ShipmentDetail from "./app/ShipmentDetail";
 import Documents from "./app/Documents";
 import { ShipmentEdit } from "./app/ShipmentEdit";
@@ -31,11 +36,12 @@ const ProtectedLayout = ({ children }: { children: React.ReactNode }) => {
   return (
     <div className="flex h-screen bg-slate-950 text-slate-100 overflow-hidden">
       <Sidebar />
-      <div className="flex-1 flex flex-col min-w-0 h-full">
+      <div className="flex-1 flex flex-col min-w-0 h-full relative">
         <TopBar />
-        <main className="flex-1 overflow-y-auto w-full">
+        <main className="flex-1 overflow-y-auto w-full pb-16 lg:pb-0">
           {children}
         </main>
+        <MobileBottomNav />
       </div>
     </div>
   );
@@ -45,6 +51,7 @@ const ProtectedLayout = ({ children }: { children: React.ReactNode }) => {
 export default function App() {
   return (
     <TooltipProvider>
+      <Toaster position="top-center" dir="rtl" />
       <Router>
         <Routes>
           <Route path="/" element={<LoginPage />} />
@@ -59,6 +66,9 @@ export default function App() {
           <Route path="/documents" element={<ProtectedLayout><Documents /></ProtectedLayout>} />
           <Route path="/chat" element={<ProtectedLayout><Chat /></ProtectedLayout>} />
           <Route path="/track" element={<ProtectedLayout><Track /></ProtectedLayout>} />
+          <Route path="/profile" element={<ProtectedLayout><Profile /></ProtectedLayout>} />
+          <Route path="/settings" element={<ProtectedLayout><Settings /></ProtectedLayout>} />
+          <Route path="/management" element={<ProtectedLayout><UserManagement /></ProtectedLayout>} />
           
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

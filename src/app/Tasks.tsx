@@ -40,6 +40,12 @@ import {
   DropdownMenuTrigger,
   DropdownMenuSeparator
 } from "@/components/ui/dropdown-menu";
+import { 
+  Tabs, 
+  TabsContent, 
+  TabsList, 
+  TabsTrigger 
+} from "@/components/ui/tabs";
 import { Task, TaskStatus } from "../types";
 import { cn } from "@/lib/utils";
 
@@ -237,6 +243,8 @@ export default function Tasks() {
     shipmentId: ""
   });
 
+  const [activeTab, setActiveTab] = useState<TaskStatus>("TODO");
+
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
@@ -323,37 +331,37 @@ export default function Tasks() {
   ];
 
   return (
-    <div className="p-6 h-full flex flex-col space-y-6 overflow-hidden font-sans">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div className="flex flex-col gap-1">
-          <h1 className="text-3xl font-extrabold tracking-tight text-[#f8fafc]">مدیریت وظایف</h1>
-          <p className="text-slate-400 text-sm">پیگیری و مدیریت کارهای جاری تیم لوجستیک.</p>
+    <div className="p-3 md:p-6 min-h-full lg:h-full flex flex-col space-y-4 md:space-y-6 lg:overflow-hidden font-sans">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="flex flex-col gap-1 text-right">
+          <h1 className="text-xl md:text-3xl font-extrabold tracking-tight text-[#f8fafc]">مدیریت وظایف</h1>
+          <p className="text-slate-400 text-[9px] md:text-sm">پیگیری و مدیریت کارهای جاری تیم لوجستیک.</p>
         </div>
-        <Button onClick={handleOpenAdd} className="bg-[#38bdf8] hover:bg-[#38bdf8]/90 text-[#020617] font-bold px-6 shadow-lg shadow-[#38bdf8]/10 transition-all hover:scale-105 active:scale-95">
+        <Button onClick={handleOpenAdd} className="bg-[#38bdf8] hover:bg-[#38bdf8]/90 text-[#020617] font-black px-6 h-10 rounded-xl shadow-lg shadow-[#38bdf8]/10 transition-all hover:scale-105 active:scale-95 w-full sm:w-auto text-xs">
           <Plus className="w-4 h-4 ml-2" />
           وظیفه جدید
         </Button>
       </div>
 
-      <div className="flex flex-wrap items-center gap-4 bg-[#0f172a] p-4 rounded-2xl border border-[#1e293b]">
-        <div className="relative flex-1 min-w-[240px]">
+      <div className="flex flex-col lg:flex-row items-stretch lg:items-center gap-4 bg-[#0f172a] p-3 md:p-4 rounded-2xl border border-[#1e293b]">
+        <div className="relative flex-1">
           <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
           <Input 
             placeholder="جستجوی وظایف..." 
-            className="bg-[#1e293b] border-[#334155] text-xs h-10 pr-10 focus:ring-[#38bdf8]/50" 
+            className="bg-[#1e293b] border-[#334155] text-xs h-10 pr-10 focus:ring-[#38bdf8]/50 rounded-xl w-full" 
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
-        <div className="flex items-center gap-2">
-          <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">اولویت:</span>
-          <div className="flex bg-[#1e293b] rounded-lg p-0.5 border border-[#334155]">
+        <div className="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar lg:pb-0 scroll-smooth">
+          <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider shrink-0">اولویت:</span>
+          <div className="flex bg-[#1e293b] rounded-xl p-0.5 border border-[#334155] shrink-0">
             {["ALL", "LOW", "MEDIUM", "HIGH", "URGENT"].map((p) => (
               <button
                 key={p}
                 onClick={() => setPriorityFilter(p)}
                 className={cn(
-                  "px-3 py-1 rounded-md text-[10px] font-bold transition-all",
+                  "px-2.5 md:px-3 py-1.5 rounded-lg text-[10px] font-bold transition-all whitespace-nowrap",
                   priorityFilter === p 
                     ? "bg-[#38bdf8] text-[#020617]" 
                     : "text-slate-500 hover:text-slate-300"
@@ -366,26 +374,71 @@ export default function Tasks() {
         </div>
       </div>
 
-      <DndContext 
-        sensors={sensors} 
-        collisionDetection={closestCorners} 
-        onDragEnd={handleDragEnd}
-      >
-        <div className="flex-1 overflow-x-auto overflow-y-hidden pb-4 custom-scrollbar">
-          <div className="flex gap-6 h-full min-w-max pr-1">
+      <Tabs defaultValue="TODO" className="w-full flex-1 flex flex-col min-h-0" onValueChange={(v) => setActiveTab(v as TaskStatus)}>
+        {/* Mobile Tabs Controller */}
+        <TabsList className="lg:hidden flex bg-[#0f172a] border border-[#1e293b] p-1 rounded-2xl w-full h-11 flex-row gap-1 mb-2">
+          {columns.map(col => (
+            <TabsTrigger 
+              key={col.status} 
+              value={col.status} 
+              className="flex-1 data-[state=active]:bg-[#38bdf8] data-[state=active]:text-[#020617] rounded-xl py-1.5 text-[10px] font-black transition-all"
+            >
+              {col.title}
+              <Badge className="mr-1.5 bg-[#1e293b] text-[#38bdf8] border-none text-[8px] px-1.5 h-4 flex items-center justify-center rounded-md">
+                {filteredTasks.filter(t => t.status === col.status).length}
+              </Badge>
+            </TabsTrigger>
+          ))}
+        </TabsList>
+
+        <DndContext 
+          sensors={sensors} 
+          collisionDetection={closestCorners} 
+          onDragEnd={handleDragEnd}
+        >
+          {/* Desktop View: Kanban Board */}
+          <div className="hidden lg:block flex-1 overflow-x-auto overflow-y-hidden pb-4 custom-scrollbar">
+            <div className="flex gap-6 h-full min-w-max pr-1">
+              {columns.map(col => (
+                <KanbanColumn 
+                  key={col.status} 
+                  title={col.title} 
+                  status={col.status} 
+                  tasks={filteredTasks.filter(t => t.status === col.status)}
+                  onEdit={handleEdit}
+                  onDelete={deleteTask}
+                />
+              ))}
+            </div>
+          </div>
+
+          {/* Mobile View: Content */}
+          <div className="lg:hidden flex-1 overflow-y-auto">
             {columns.map(col => (
-              <KanbanColumn 
-                key={col.status} 
-                title={col.title} 
-                status={col.status} 
-                tasks={filteredTasks.filter(t => t.status === col.status)}
-                onEdit={handleEdit}
-                onDelete={deleteTask}
-              />
+              <TabsContent key={col.status} value={col.status} className="mt-0 focus-visible:outline-none">
+                <SortableContext items={filteredTasks.filter(t => t.status === col.status).map(t => t.id)} strategy={verticalListSortingStrategy}>
+                  <div className="flex flex-col gap-3 pb-24">
+                    {filteredTasks.filter(t => t.status === col.status).map(task => (
+                      <SortableTaskCard 
+                        key={task.id} 
+                        task={task} 
+                        onEdit={handleEdit} 
+                        onDelete={deleteTask} 
+                      />
+                    ))}
+                    {filteredTasks.filter(t => t.status === col.status).length === 0 && (
+                      <div className="flex flex-col items-center justify-center py-20 bg-[#0f172a]/40 rounded-3xl border-2 border-dashed border-[#1e293b]">
+                        <AlertCircle className="w-8 h-8 mb-2 text-slate-700" />
+                        <span className="text-xs text-slate-500 font-bold">هیچ وظیفه‌ای در این بخش نیست</span>
+                      </div>
+                    )}
+                  </div>
+                </SortableContext>
+              </TabsContent>
             ))}
           </div>
-        </div>
-      </DndContext>
+        </DndContext>
+      </Tabs>
 
       {/* Add/Edit Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>

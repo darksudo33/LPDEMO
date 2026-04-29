@@ -152,7 +152,7 @@ export default function Shipments() {
 
   return (
     <div className="p-5 space-y-4 font-sans">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex flex-col">
           <h1 className="text-xl font-bold tracking-tight text-[#f8fafc]">مدیریت محموله‌ها</h1>
           <p className="text-[12px] text-slate-400">لیست کامل و وضعیت جزئی بارهای در جریان.</p>
@@ -161,7 +161,7 @@ export default function Shipments() {
         <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
           <DialogTrigger
             render={
-              <Button className="bg-[#38bdf8] hover:bg-[#38bdf8]/90 text-[#020617] gap-2 h-9 text-xs font-bold px-4">
+              <Button className="bg-[#38bdf8] hover:bg-[#38bdf8]/90 text-[#020617] gap-2 h-10 w-full sm:w-auto text-xs font-bold px-4 rounded-xl">
                 <Plus className="w-3.5 h-3.5" />
                 ثبت محموله جدید
               </Button>
@@ -251,12 +251,12 @@ export default function Shipments() {
         </Dialog>
       </div>
 
-      <div className="flex items-center gap-3 bg-[#0f172a] p-3 rounded-xl border border-[#1e293b]">
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 bg-[#0f172a] p-3 rounded-xl border border-[#1e293b]">
         <div className="relative flex-1">
           <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-500" />
           <Input 
             placeholder="جستجو با شماره پیگیری یا کانتینر..." 
-            className="bg-[#1e293b] border-[#334155] pr-10 h-9 text-xs focus-visible:ring-[#38bdf8]/50"
+            className="bg-[#1e293b] border-[#334155] pr-10 h-10 text-xs focus-visible:ring-[#38bdf8]/50 rounded-xl"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
@@ -264,7 +264,7 @@ export default function Shipments() {
         <DropdownMenu>
           <DropdownMenuTrigger
             render={
-              <Button variant="outline" className="border-[#1e293b] bg-[#1e293b] gap-2 h-9 text-xs text-slate-300 hover:bg-[#334155]">
+              <Button variant="outline" className="border-[#1e293b] bg-[#1e293b] gap-2 h-10 text-xs text-slate-300 hover:bg-[#334155] rounded-xl">
                 <Filter className="w-3.5 h-3.5" />
                 {statusOptions.find(o => o.value === statusFilter)?.label || "فیلتر"}
               </Button>
@@ -292,118 +292,218 @@ export default function Shipments() {
         </DropdownMenu>
       </div>
 
-      <Card className="bg-[#0f172a] border-[#1e293b] rounded-xl overflow-hidden">
+      <div className="md:hidden space-y-4">
+        {processedShipments.length > 0 ? (
+          processedShipments.map((shipment) => (
+            <Card key={shipment.id} className="bg-[#0f172a] border-[#1e293b] rounded-2xl overflow-hidden shadow-lg p-4">
+               <div className="flex items-start justify-between mb-4">
+                  <div className="flex flex-col gap-1">
+                     <span className="font-mono text-sm font-black text-[#38bdf8]">{shipment.trackingNumber}</span>
+                     <span className="text-[10px] text-slate-500 font-mono">{shipment.containerNumber}</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      className="text-slate-500 h-9 w-9 hover:text-white hover:bg-[#1e293b] rounded-xl"
+                      onClick={() => handleViewDetails(shipment)}
+                    >
+                      <Eye className="w-4 h-4" />
+                    </Button>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger
+                        render={
+                          <Button variant="ghost" size="icon" className="text-slate-500 h-9 w-9 hover:text-white hover:bg-[#1e293b] rounded-xl">
+                            <MoreVertical className="w-4 h-4" />
+                          </Button>
+                        }
+                      />
+                      <DropdownMenuContent className="bg-[#0f172a] border-[#1e293b] text-[#f8fafc] w-52 shadow-2xl" align="end" dir="rtl">
+                         <DropdownMenuItem 
+                           className="text-xs cursor-pointer hover:bg-[#1e293b] flex items-center gap-2 rounded-lg"
+                           onClick={() => navigate(`/shipments/${shipment.id}/edit`)}
+                         >
+                           <Edit className="w-3.5 h-3.5" />
+                           ویرایش محموله
+                         </DropdownMenuItem>
+                         <DropdownMenuItem 
+                           className="text-xs cursor-pointer hover:bg-[#1e293b] flex items-center gap-2 text-[#38bdf8] font-bold rounded-lg"
+                           onClick={() => {
+                             const link = `${window.location.origin}/track?q=${shipment.trackingNumber}`;
+                             navigator.clipboard.writeText(link);
+                             alert("لینک رهگیری مشتری در حافظه کپی شد:\n" + link);
+                           }}
+                         >
+                           <Share2 className="w-3.5 h-3.5" />
+                           اشتراک‌گذاری با مشتری
+                         </DropdownMenuItem>
+                         <DropdownMenuSeparator className="bg-[#1e293b]" />
+                         <DropdownMenuGroup>
+                           <DropdownMenuLabel className="text-[10px] text-slate-500 font-black px-2 py-1">تغییر وضعیت</DropdownMenuLabel>
+                         </DropdownMenuGroup>
+                         {statusOptions.filter(o => o.value !== "ALL").map(status => (
+                           <DropdownMenuItem 
+                             key={status.value} 
+                             className="text-xs cursor-pointer hover:bg-[#1e293b] flex justify-between items-center rounded-lg"
+                             onClick={() => updateShipmentStatus(shipment.id, status.value as ShipmentStatus)}
+                           >
+                             <span className="font-medium">{status.label}</span>
+                             {shipment.status === status.value && <Check className="w-3 h-3 text-[#38bdf8]" />}
+                           </DropdownMenuItem>
+                         ))}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+               </div>
+
+               <div className="grid grid-cols-2 gap-4 mb-4 bg-slate-950/30 p-3 rounded-xl border border-[#1e293b]/50">
+                  <div className="flex flex-col gap-1">
+                     <span className="text-[9px] text-slate-500 font-black uppercase">مشتری</span>
+                     <span className="text-[11px] text-slate-200 font-bold truncate">{shipment.customerName}</span>
+                  </div>
+                  <div className="flex flex-col gap-1">
+                     <span className="text-[9px] text-slate-500 font-black uppercase">تحویل تخمینی</span>
+                     <span className="text-[11px] text-slate-200 font-mono">{shipment.estimatedDelivery}</span>
+                  </div>
+               </div>
+
+               <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                     <div className="flex flex-col">
+                        <span className="text-[11px] text-slate-300 font-bold">{shipment.origin}</span>
+                        <span className="text-[9px] text-slate-500">مبدأ</span>
+                     </div>
+                     <ArrowUpDown className="w-3 h-3 text-slate-600 rotate-90" />
+                     <div className="flex flex-col">
+                        <span className="text-[11px] text-slate-300 font-bold">{shipment.destination}</span>
+                        <span className="text-[9px] text-slate-500">مقصد</span>
+                     </div>
+                  </div>
+                  <StatusBadge status={shipment.status} />
+               </div>
+            </Card>
+          ))
+        ) : (
+          <div className="text-center py-10 bg-[#0f172a] rounded-2xl border border-[#1e293b]">
+            <p className="text-xs text-slate-500">موردی یافت نشد.</p>
+          </div>
+        )}
+      </div>
+
+      <Card className="bg-[#0f172a] border-[#1e293b] rounded-xl overflow-hidden hidden md:block">
         <CardContent className="p-0">
-          <table className="w-full text-right text-[12px]">
-            <thead>
-              <tr className="border-b border-[#1e293b] bg-[#1e293b]/20">
-                <th className="px-5 py-3 font-medium text-[#94a3b8]">شماره رهگیری</th>
-                <th className="px-5 py-3 font-medium text-[#94a3b8]">کانتینر</th>
-                <th className="px-5 py-3 font-medium text-[#94a3b8]">مبدأ</th>
-                <th className="px-5 py-3 font-medium text-[#94a3b8]">مقصد</th>
-                <th className="px-5 py-3 font-medium text-[#94a3b8]">مشتری</th>
-                <th 
-                  className="px-5 py-3 font-medium text-[#94a3b8] cursor-pointer hover:text-white transition-colors"
-                  onClick={() => requestSort('status')}
-                >
-                  <div className="flex items-center gap-2">
-                    وضعیت
-                    {getSortIcon('status')}
-                  </div>
-                </th>
-                <th 
-                  className="px-5 py-3 font-medium text-[#94a3b8] cursor-pointer hover:text-white transition-colors"
-                  onClick={() => requestSort('estimatedDelivery')}
-                >
-                  <div className="flex items-center gap-2">
-                    تحویل تخمینی
-                    {getSortIcon('estimatedDelivery')}
-                  </div>
-                </th>
-                <th className="px-5 py-3 font-medium text-[#94a3b8]">عملیات</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-[#1e293b]">
-              {processedShipments.length > 0 ? (
-                processedShipments.map((shipment) => (
-                  <tr key={shipment.id} className="hover:bg-[#1e293b]/30 transition-colors group">
-                    <td className="px-5 py-3">
-                      <span className="font-mono text-sm font-bold text-[#38bdf8]">{shipment.trackingNumber}</span>
-                    </td>
-                    <td className="px-5 py-3 font-mono text-[11px] text-slate-400">{shipment.containerNumber}</td>
-                    <td className="px-5 py-3 text-slate-300">{shipment.origin}</td>
-                    <td className="px-5 py-3 text-slate-300">{shipment.destination}</td>
-                    <td className="px-5 py-3 font-medium text-slate-200">{shipment.customerName}</td>
-                    <td className="px-5 py-3">
-                      <StatusBadge status={shipment.status} />
-                    </td>
-                    <td className="px-5 py-3 text-slate-400 font-mono">{shipment.estimatedDelivery}</td>
-                    <td className="px-5 py-3">
-                      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <Button 
-                          variant="ghost" 
-                          size="icon" 
-                          className="text-slate-500 h-8 w-8 hover:text-white hover:bg-[#1e293b]"
-                          onClick={() => handleViewDetails(shipment)}
-                        >
-                          <Eye className="w-4 h-4" />
-                        </Button>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger
-                            render={
-                              <Button variant="ghost" size="icon" className="text-slate-500 h-8 w-8 hover:text-white hover:bg-[#1e293b]">
-                                <MoreHorizontal className="w-4 h-4" />
-                              </Button>
-                            }
-                          />
-                          <DropdownMenuContent className="bg-[#0f172a] border-[#1e293b] text-[#f8fafc] w-48">
-                             <DropdownMenuItem 
-                               className="text-xs cursor-pointer hover:bg-[#1e293b] flex items-center gap-2"
-                               onClick={() => navigate(`/shipments/${shipment.id}/edit`)}
-                             >
-                               <Edit className="w-3.5 h-3.5" />
-                               ویرایش محموله
-                             </DropdownMenuItem>
-                             <DropdownMenuItem 
-                               className="text-xs cursor-pointer hover:bg-[#1e293b] flex items-center gap-2 text-[#38bdf8] font-bold"
-                               onClick={() => {
-                                 const link = `${window.location.origin}/track?q=${shipment.trackingNumber}`;
-                                 navigator.clipboard.writeText(link);
-                                 alert("لینک رهگیری مشتری در حافظه کپی شد:\n" + link);
-                               }}
-                             >
-                               <Share2 className="w-3.5 h-3.5" />
-                               اشتراک‌گذاری با مشتری
-                             </DropdownMenuItem>
-                             <DropdownMenuSeparator className="bg-[#1e293b]" />
-                             <DropdownMenuGroup>
-                               <DropdownMenuLabel className="text-[10px] text-slate-500">تغییر وضعیت</DropdownMenuLabel>
-                             </DropdownMenuGroup>
-                             {statusOptions.filter(o => o.value !== "ALL").map(status => (
+          <div className="overflow-x-auto">
+            <table className="w-full text-right text-[12px] min-w-[800px]">
+              <thead>
+                <tr className="border-b border-[#1e293b] bg-[#1e293b]/20">
+                  <th className="px-5 py-4 font-medium text-[#94a3b8]">شماره رهگیری</th>
+                  <th className="px-5 py-4 font-medium text-[#94a3b8]">کانتینر</th>
+                  <th className="px-5 py-4 font-medium text-[#94a3b8]">مبدأ</th>
+                  <th className="px-5 py-4 font-medium text-[#94a3b8]">مقصد</th>
+                  <th className="px-5 py-4 font-medium text-[#94a3b8]">مشتری</th>
+                  <th 
+                    className="px-5 py-4 font-medium text-[#94a3b8] cursor-pointer hover:text-white transition-colors"
+                    onClick={() => requestSort('status')}
+                  >
+                    <div className="flex items-center gap-2">
+                      وضعیت
+                      {getSortIcon('status')}
+                    </div>
+                  </th>
+                  <th 
+                    className="px-5 py-4 font-medium text-[#94a3b8] cursor-pointer hover:text-white transition-colors"
+                    onClick={() => requestSort('estimatedDelivery')}
+                  >
+                    <div className="flex items-center gap-2">
+                      تحویل تخمینی
+                      {getSortIcon('estimatedDelivery')}
+                    </div>
+                  </th>
+                  <th className="px-5 py-4 font-medium text-[#94a3b8]">عملیات</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-[#1e293b]">
+                {processedShipments.length > 0 ? (
+                  processedShipments.map((shipment) => (
+                    <tr key={shipment.id} className="hover:bg-[#1e293b]/30 transition-colors group">
+                      <td className="px-5 py-4">
+                        <span className="font-mono text-sm font-bold text-[#38bdf8]">{shipment.trackingNumber}</span>
+                      </td>
+                      <td className="px-5 py-4 font-mono text-[11px] text-slate-400">{shipment.containerNumber}</td>
+                      <td className="px-5 py-4 text-slate-300">{shipment.origin}</td>
+                      <td className="px-5 py-4 text-slate-300">{shipment.destination}</td>
+                      <td className="px-5 py-4 font-medium text-slate-200">{shipment.customerName}</td>
+                      <td className="px-5 py-4">
+                        <StatusBadge status={shipment.status} />
+                      </td>
+                      <td className="px-5 py-4 text-slate-400 font-mono">{shipment.estimatedDelivery}</td>
+                      <td className="px-5 py-4">
+                        <div className="flex items-center gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="text-slate-500 h-8 w-8 hover:text-white hover:bg-[#1e293b]"
+                            onClick={() => handleViewDetails(shipment)}
+                          >
+                            <Eye className="w-4 h-4" />
+                          </Button>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger
+                              render={
+                                <Button variant="ghost" size="icon" className="text-slate-500 h-8 w-8 hover:text-white hover:bg-[#1e293b]">
+                                  <MoreHorizontal className="w-4 h-4" />
+                                </Button>
+                              }
+                            />
+                            <DropdownMenuContent className="bg-[#0f172a] border-[#1e293b] text-[#f8fafc] w-48 shadow-2xl" align="end" dir="rtl">
                                <DropdownMenuItem 
-                                 key={status.value} 
-                                 className="text-xs cursor-pointer hover:bg-[#1e293b] flex justify-between items-center"
-                                 onClick={() => updateShipmentStatus(shipment.id, status.value as ShipmentStatus)}
+                                 className="text-xs cursor-pointer hover:bg-[#1e293b] flex items-center gap-2 rounded-lg"
+                                 onClick={() => navigate(`/shipments/${shipment.id}/edit`)}
                                >
-                                 {status.label}
-                                 {shipment.status === status.value && <Check className="w-3 h-3 text-[#38bdf8]" />}
+                                 <Edit className="w-3.5 h-3.5" />
+                                 ویرایش محموله
                                </DropdownMenuItem>
-                             ))}
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </div>
+                               <DropdownMenuItem 
+                                 className="text-xs cursor-pointer hover:bg-[#1e293b] flex items-center gap-2 text-[#38bdf8] font-bold rounded-lg"
+                                 onClick={() => {
+                                   const link = `${window.location.origin}/track?q=${shipment.trackingNumber}`;
+                                   navigator.clipboard.writeText(link);
+                                   alert("لینک رهگیری مشتری در حافظه کپی شد:\n" + link);
+                                 }}
+                               >
+                                 <Share2 className="w-3.5 h-3.5" />
+                                 اشتراک‌گذاری با مشتری
+                               </DropdownMenuItem>
+                               <DropdownMenuSeparator className="bg-[#1e293b]" />
+                               <DropdownMenuGroup>
+                                 <DropdownMenuLabel className="text-[10px] text-slate-500">تغییر وضعیت</DropdownMenuLabel>
+                               </DropdownMenuGroup>
+                               {statusOptions.filter(o => o.value !== "ALL").map(status => (
+                                 <DropdownMenuItem 
+                                   key={status.value} 
+                                   className="text-xs cursor-pointer hover:bg-[#1e293b] flex justify-between items-center rounded-lg"
+                                   onClick={() => updateShipmentStatus(shipment.id, status.value as ShipmentStatus)}
+                                 >
+                                   {status.label}
+                                   {shipment.status === status.value && <Check className="w-3 h-3 text-[#38bdf8]" />}
+                                 </DropdownMenuItem>
+                               ))}
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan={8} className="px-5 py-12 text-center text-slate-500">
+                      <p className="text-sm">موردی یافت نشد.</p>
                     </td>
                   </tr>
-                ))
-              ) : (
-                <tr>
-                  <td colSpan={8} className="px-5 py-12 text-center text-slate-500">
-                    <p className="text-sm">موردی یافت نشد.</p>
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
+                )}
+              </tbody>
+            </table>
+          </div>
         </CardContent>
       </Card>
 

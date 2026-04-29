@@ -77,23 +77,23 @@ export function ShipmentEdit() {
   ];
 
   return (
-    <div className="space-y-6" dir="rtl">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2 text-xs text-slate-500">
+    <div className="p-4 md:p-6 space-y-6" dir="rtl">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="flex items-center gap-2 text-[10px] sm:text-xs text-slate-500 overflow-x-auto whitespace-nowrap pb-1">
           <span className="cursor-pointer hover:text-white" onClick={() => navigate("/dashboard")}>پنل مدیریت</span>
-          <ChevronRight className="w-3 h-3" />
+          <ChevronRight className="w-3 h-3 shrink-0" />
           <span className="cursor-pointer hover:text-white" onClick={() => navigate("/shipments")}>محموله‌ها</span>
-          <ChevronRight className="w-3 h-3" />
-          <span className="text-slate-300 font-bold">ویرایش محموله {shipment.trackingNumber}</span>
+          <ChevronRight className="w-3 h-3 shrink-0" />
+          <span className="text-slate-300 font-bold">ویرایش {shipment.trackingNumber}</span>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" className="h-9 border-slate-700 hover:bg-slate-800 text-xs px-4" onClick={() => navigate(`/shipments/${shipment.id}`)}>
+          <Button variant="outline" className="flex-1 sm:flex-none h-10 border-slate-700 hover:bg-slate-800 text-xs px-4 rounded-xl" onClick={() => navigate(`/shipments/${shipment.id}`)}>
             <X className="w-3.5 h-3.5 ml-2" />
             انصراف
           </Button>
-          <Button className="h-9 bg-[#38bdf8] hover:bg-[#38bdf8]/90 text-[#020617] text-xs font-bold px-4" onClick={handleSubmit}>
+          <Button className="flex-1 sm:flex-none h-10 bg-[#38bdf8] hover:bg-[#38bdf8]/90 text-[#020617] text-xs font-bold px-4 rounded-xl" onClick={handleSubmit}>
             <Save className="w-3.5 h-3.5 ml-2" />
-            ذخیره تغییرات
+            ذخیره
           </Button>
         </div>
       </div>

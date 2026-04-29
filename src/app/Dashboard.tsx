@@ -2,6 +2,7 @@ import React from "react";
 import { cn } from "@/lib/utils";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { useMockStore } from "@/src/store/useMockStore";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from "recharts";
 import { Package, TrendingUp, CheckCircle, Users, ArrowUpRight, ArrowDownRight, Clock } from "lucide-react";
@@ -32,9 +33,21 @@ export default function Dashboard() {
   const shipments = useMockStore(state => state.shipments);
   const customers = useMockStore(state => state.customers);
   const tasks = useMockStore(state => state.tasks);
+  const currentUser = useMockStore(state => state.currentUser);
 
   const recentShipments = React.useMemo(() => shipments.slice(0, 6), [shipments]);
   const recentTasks = React.useMemo(() => tasks.slice(0, 3), [tasks]);
+  
+  const myTasks = React.useMemo(() => {
+    if (!currentUser) return [];
+    return tasks
+      .filter(task => task.assignedToUserId === currentUser.id && task.status !== "DONE")
+      .sort((a, b) => {
+        const priorityOrder = { URGENT: 0, HIGH: 1, MEDIUM: 2, LOW: 3 };
+        return priorityOrder[a.priority] - priorityOrder[b.priority];
+      })
+      .slice(0, 4);
+  }, [tasks, currentUser]);
 
   const chartData = [
     { name: "فروردین", value: 12 },
@@ -52,14 +65,18 @@ export default function Dashboard() {
   ];
 
   return (
-    <div className="p-5 space-y-4">
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+    <div className="p-3 md:p-5 space-y-4 font-sans">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
         {stats.map((stat, i) => (
-          <Card key={i} className="bg-[#0f172a] border-[#1e293b] rounded-xl shadow-none">
-            <CardContent className="p-4 flex flex-col gap-1">
-              <p className="text-[12px] text-[#94a3b8] font-medium">{stat.title}</p>
-              <p className="text-2xl font-bold text-[#f8fafc]">{stat.value}</p>
-              <p className={cn("text-[11px] mt-1", stat.color || (stat.up ? "text-green-500" : "text-red-500"))}>
+          <Card key={i} className="bg-[#0f172a] border-[#1e293b] rounded-xl shadow-none overflow-hidden group">
+            <CardContent className="p-3 md:p-4 flex flex-col gap-1 relative">
+              <div className={cn("absolute -top-1 -left-1 w-12 h-12 opacity-10 blur-xl rounded-full transition-all group-hover:opacity-20", stat.color ? "bg-current" : "bg-emerald-500")} />
+              <div className="flex items-center justify-between mb-1">
+                <p className="text-[10px] md:text-[11px] text-[#94a3b8] font-black uppercase tracking-wider">{stat.title}</p>
+                <stat.icon className={cn("w-3.5 h-3.5 md:w-4 md:h-4 opacity-50", stat.color || "text-[#38bdf8]")} />
+              </div>
+              <p className="text-xl md:text-2xl font-black text-[#f8fafc] leading-none mb-1">{stat.value}</p>
+              <p className={cn("text-[9px] md:text-[10px] font-medium transition-all", stat.color || (stat.up ? "text-green-500" : "text-red-500"))}>
                 {stat.change}
               </p>
             </CardContent>
@@ -68,73 +85,171 @@ export default function Dashboard() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        <Card className="lg:col-span-2 bg-[#0f172a] border-[#1e293b] rounded-xl overflow-hidden flex flex-col min-h-0">
-          <CardHeader className="p-4 border-b border-[#1e293b] flex flex-row items-center justify-between space-y-0">
-            <CardTitle className="text-sm font-semibold text-[#f8fafc]">آخرین وضعیت محموله‌ها</CardTitle>
-            <span className="text-xs text-[#38bdf8] cursor-pointer hover:underline">مشاهده همه</span>
-          </CardHeader>
-          <CardContent className="p-0 overflow-x-auto">
-            <table className="w-full text-right text-[12px]">
-              <thead>
-                <tr className="border-b border-[#1e293b]">
-                  <th className="px-4 py-3 font-medium text-[#94a3b8]">شماره پیگیری</th>
-                  <th className="px-4 py-3 font-medium text-[#94a3b8]">مشتری</th>
-                  <th className="px-4 py-3 font-medium text-[#94a3b8]">مبدا / مقصد</th>
-                  <th className="px-4 py-3 font-medium text-[#94a3b8]">وضعیت</th>
-                  <th className="px-4 py-3 font-medium text-[#94a3b8]">آخرین بروزرسانی</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-[#1e293b]">
-                {recentShipments.map((shipment) => (
-                  <tr 
-                    key={shipment.id} 
-                    className="hover:bg-[#1e293b]/30 transition-colors cursor-pointer"
-                    onClick={() => navigate(`/shipments/${shipment.id}`)}
+        <div className="lg:col-span-2 space-y-4">
+          <Card className="bg-[#0f172a] border-[#1e293b] rounded-xl overflow-hidden flex flex-col min-h-0">
+            <CardHeader className="p-4 border-b border-[#1e293b] flex flex-row items-center justify-between space-y-0">
+              <CardTitle className="text-xs md:text-sm font-bold text-[#f8fafc]">روند بارگیری ماهانه</CardTitle>
+              <div className="flex items-center gap-2">
+                 <span className="flex items-center gap-1 text-[10px] text-slate-500"><div className="w-2 h-2 rounded-full bg-[#38bdf8]" /> محموله‌ها</span>
+              </div>
+            </CardHeader>
+            <CardContent className="p-4 h-[200px] md:h-[250px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={chartData}>
+                  <XAxis 
+                    dataKey="name" 
+                    axisLine={false} 
+                    tickLine={false} 
+                    tick={{ fill: '#64748b', fontSize: 10, fontWeight: 700 }}
+                  />
+                  <Tooltip 
+                    contentStyle={{ backgroundColor: '#0f172a', borderColor: '#1e293b', borderRadius: '12px', fontSize: '11px', textAlign: 'right' }}
+                    itemStyle={{ color: '#38bdf8' }}
+                  />
+                  <Bar 
+                    dataKey="value" 
+                    radius={[4, 4, 0, 0]} 
+                    fill="#38bdf8"
+                    barSize={20}
                   >
-                    <td className="px-4 py-3 font-mono text-slate-100 font-bold text-[#38bdf8]">{shipment.trackingNumber}</td>
-                    <td className="px-4 py-3 text-slate-300">{shipment.customerName}</td>
-                    <td className="px-4 py-3 text-slate-300">
-                      {shipment.origin} ← {shipment.destination}
-                    </td>
-                    <td className="px-4 py-3">
-                      <StatusBadge status={shipment.status} />
-                    </td>
-                    <td className="px-4 py-3 text-slate-400">{shipment.createdAt}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </CardContent>
-        </Card>
+                    {chartData.map((entry, index) => (
+                      <Cell 
+                        key={`cell-${index}`} 
+                        fill={index === chartData.length - 1 ? '#38bdf8' : '#38bdf833'} 
+                      />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
 
-        <Card className="bg-[#0f172a] border-[#1e293b] rounded-xl flex flex-col min-h-0">
-          <CardHeader className="p-4 border-b border-[#1e293b]">
-            <CardTitle className="text-sm font-semibold text-[#f8fafc]">وظایف اولویت‌دار</CardTitle>
-          </CardHeader>
-          <CardContent className="p-4 space-y-3 overflow-y-auto">
-            {recentTasks.map(task => (
-              <div key={task.id} className="bg-[#1e293b] border border-[#334155] rounded-lg p-3 hover:border-[#38bdf8]/30 transition-all cursor-pointer">
-                <p className="text-[13px] font-medium text-[#f8fafc] mb-2">{task.title}</p>
-                <div className="flex justify-between items-center text-[10px] text-[#94a3b8]">
-                  <span>{task.dueDate}</span>
-                  <Badge className={cn(
-                    "text-[8px] font-bold py-0 h-4 border-none",
-                    task.priority === "URGENT" ? "bg-red-500/10 text-red-500" : 
-                    task.priority === "HIGH" ? "bg-orange-500/10 text-orange-500" : 
-                    "bg-blue-500/10 text-blue-500"
-                  )}>
-                    {task.priority === "URGENT" ? "فوری" : task.priority === "HIGH" ? "بالا" : "متوسط"}
-                  </Badge>
+          <Card className="bg-[#0f172a] border-[#1e293b] rounded-xl overflow-hidden flex flex-col min-h-0">
+            <CardHeader className="p-4 border-b border-[#1e293b] flex flex-row items-center justify-between space-y-0">
+              <CardTitle className="text-sm font-bold text-[#f8fafc]">بارهای اخیر</CardTitle>
+              <span className="text-[11px] text-[#38bdf8] font-bold cursor-pointer hover:underline" onClick={() => navigate('/shipments')}>مشاهده همه</span>
+            </CardHeader>
+            <CardContent className="p-0">
+              <div className="overflow-x-auto">
+                <div className="min-w-[600px]">
+                  <table className="w-full text-right text-[11px]">
+                    <thead>
+                      <tr className="border-b border-[#1e293b] bg-[#1e293b]/20">
+                        <th className="px-4 py-3 font-bold text-[#94a3b8]">رهگیری</th>
+                        <th className="px-4 py-3 font-bold text-[#94a3b8]">مشتری</th>
+                        <th className="px-4 py-3 font-bold text-[#94a3b8]">مسیر</th>
+                        <th className="px-4 py-3 font-bold text-[#94a3b8]">وضعیت</th>
+                        <th className="px-4 py-3 font-bold text-[#94a3b8]">بروزرسانی</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-[#1e293b]">
+                      {recentShipments.map((shipment) => (
+                        <tr 
+                          key={shipment.id} 
+                          className="hover:bg-[#1e293b]/30 transition-all cursor-pointer group"
+                          onClick={() => navigate(`/shipments/${shipment.id}`)}
+                        >
+                          <td className="px-4 py-3 font-mono text-[#38bdf8] font-black">{shipment.trackingNumber}</td>
+                          <td className="px-4 py-3 text-slate-300 font-bold">{shipment.customerName}</td>
+                          <td className="px-4 py-3 text-slate-400">
+                            <span className="text-slate-200">{shipment.origin}</span>
+                            <span className="mx-1 opacity-30">←</span>
+                            <span className="text-slate-200">{shipment.destination}</span>
+                          </td>
+                          <td className="px-4 py-3">
+                            <StatusBadge status={shipment.status} />
+                          </td>
+                          <td className="px-4 py-3 text-slate-500 font-mono text-[10px]">{shipment.createdAt}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
               </div>
-            ))}
-            <div className="pt-2">
-              <button className="w-full bg-transparent border border-dashed border-[#334155] text-[#94a3b8] py-2 rounded-lg text-[12px] hover:border-[#38bdf8] hover:text-[#38bdf8] transition-all" onClick={() => navigate('/tasks')}>
-                + تعریف وظیفه جدید
-              </button>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        </div>
+
+        <div className="lg:col-span-1 space-y-4">
+          <Card className="bg-[#0f172a] border-[#1e293b] rounded-xl flex flex-col min-h-0 shadow-lg shadow-black/20 overflow-hidden">
+            <CardHeader className="p-4 border-b border-[#1e293b] flex flex-row items-center justify-between space-y-0 bg-[#38bdf8]/5">
+              <CardTitle className="text-xs md:text-sm font-black text-[#38bdf8] flex items-center gap-2">
+                <CheckCircle className="w-4 h-4" />
+                وظایف من (امروز)
+              </CardTitle>
+              <Badge variant="outline" className="text-[9px] border-[#38bdf8]/30 text-[#38bdf8] h-4.5 px-1.5 font-black">
+                {myTasks.length} وظیفه
+              </Badge>
+            </CardHeader>
+            <CardContent className="p-3 md:p-4 space-y-2.5 overflow-y-auto">
+              {myTasks.length === 0 ? (
+                <div className="text-center py-8">
+                  <p className="text-[10px] text-slate-600 font-medium tracking-tight">برنامه کاری شما برای امروز تکمیل است ✨</p>
+                </div>
+              ) : (
+                myTasks.map(task => (
+                  <div key={task.id} className="group relative bg-[#020617]/40 border border-[#1e293b] rounded-xl p-3 hover:border-[#38bdf8]/50 transition-all cursor-pointer">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-[11px] md:text-[12px] font-black text-slate-200 truncate leading-tight">{task.title}</p>
+                        <p className="text-[9px] text-slate-500 mt-1.5 flex items-center gap-1 opacity-70">
+                          <Clock className="w-3 h-3" />
+                          {task.dueDate}
+                        </p>
+                      </div>
+                      <Badge className={cn(
+                        "text-[8px] font-black h-4 px-1 border-none shadow-none shrink-0",
+                        task.priority === "URGENT" ? "bg-rose-500 text-white" : 
+                        task.priority === "HIGH" ? "bg-amber-500 text-black" : 
+                        "bg-[#1e293b] text-slate-300"
+                      )}>
+                        {task.priority === "URGENT" ? "فوری" : task.priority === "HIGH" ? "بالا" : "عادی"}
+                      </Badge>
+                    </div>
+                  </div>
+                ))
+              )}
+              <Button 
+                variant="ghost" 
+                className="w-full text-[10px] text-[#38bdf8] hover:bg-[#38bdf8]/10 h-8 mt-1 font-bold rounded-lg"
+                onClick={() => navigate('/tasks')}
+              >
+                مدیریت همه کارها
+              </Button>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-[#0f172a] border-[#1e293b] rounded-xl flex flex-col min-h-0 opacity-80 hover:opacity-100 transition-all">
+            <CardHeader className="p-3 md:p-4 border-b border-[#1e293b]">
+              <CardTitle className="text-xs font-bold text-slate-400">پیگیری عملیاتی تیم</CardTitle>
+            </CardHeader>
+            <CardContent className="p-3 md:p-4 space-y-2 overflow-y-auto">
+              {recentTasks.map(task => (
+                <div key={task.id} className="bg-[#1e293b]/50 border border-transparent rounded-lg p-2.5 hover:border-[#38bdf8]/30 transition-all cursor-pointer flex items-center justify-between gap-2">
+                  <div className="min-w-0">
+                    <p className="text-[10px] font-bold text-slate-300 truncate">{task.title}</p>
+                    <p className="text-[8px] text-slate-500 mt-0.5">{task.assignedToName}</p>
+                  </div>
+                  <div className={cn(
+                    "w-1.5 h-1.5 rounded-full shrink-0",
+                    task.priority === "URGENT" ? "bg-red-500" : 
+                    task.priority === "HIGH" ? "bg-orange-500" : 
+                    "bg-blue-500"
+                  )} />
+                </div>
+              ))}
+              <div className="pt-1">
+                <Button 
+                  variant="outline" 
+                  className="w-full border-dashed border-[#334155] text-[#94a3b8] h-9 text-[10px] font-bold hover:bg-[#1e293b] rounded-lg"
+                  onClick={() => navigate('/tasks')}
+                >
+                  افزودن تسک مدیریتی
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </div>
   );

@@ -36,54 +36,54 @@ export default function Track() {
   const progressPercent = (completedCount / steps.length) * 100;
 
   return (
-    <div className="p-6 h-full flex flex-col space-y-6 max-w-5xl mx-auto">
-      <div className="flex flex-col items-center text-center space-y-4 pt-12 pb-8">
-        <div className="p-4 bg-primary/10 rounded-full">
-           <MapPin className="w-12 h-12 text-primary" />
+    <div className="p-4 sm:p-6 h-full flex flex-col space-y-6 max-w-5xl mx-auto font-sans">
+      <div className="flex flex-col items-center text-center space-y-4 pt-6 md:pt-12 pb-4 md:pb-8">
+        <div className="p-3 md:p-4 bg-[#38bdf8]/10 rounded-full">
+           <MapPin className="w-8 h-8 md:w-12 md:h-12 text-[#38bdf8]" />
         </div>
-        <h1 className="text-4xl font-black tracking-tight">رهگیری آنلاین محموله</h1>
-        <p className="text-slate-400 max-w-md mx-auto">برای مشاهده وضعیت لحظه‌ای بار، شماره پیگیری ال‌اس (مثلاً LS-9801) را وارد کنید.</p>
+        <h1 className="text-2xl md:text-4xl font-black tracking-tight text-white">رهگیری محموله</h1>
+        <p className="text-slate-400 text-xs md:text-sm max-w-sm mx-auto">شماره پیگیری (مثلاً LS-9801) را وارد کنید.</p>
         
-        <form onSubmit={handleTrack} className="w-full max-w-xl flex gap-3 mt-4">
+        <form onSubmit={handleTrack} className="w-full max-w-xl flex flex-col sm:flex-row gap-2 mt-4">
            <Input 
-             placeholder="شماره پیگیری (LS-XXXX)" 
-             className="h-14 bg-slate-900 border-slate-800 text-center text-2xl font-mono tracking-widest focus-visible:ring-primary/50"
+             placeholder="LS-XXXX" 
+             className="h-12 md:h-14 bg-slate-900 border-slate-800 text-center text-xl md:text-2xl font-mono tracking-widest focus-visible:ring-[#38bdf8]/50 rounded-xl"
              value={trackingId}
              onChange={(e) => setTrackingId(e.target.value)}
            />
-           <Button type="submit" className="h-14 px-8 bg-primary hover:bg-primary/90 text-lg font-bold">رهگیری</Button>
+           <Button type="submit" className="h-12 md:h-14 px-8 bg-[#38bdf8] hover:bg-[#38bdf8]/90 text-[#020617] font-black rounded-xl">رهگیری</Button>
         </form>
       </div>
 
       {activeShipment ? (
         <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-          <Card className="bg-slate-900 border-slate-800 border-t-4 border-t-primary shadow-2xl">
-            <CardHeader className="flex flex-row items-center justify-between pb-4">
-               <div>
-                  <Badge variant="outline" className="mb-2 text-primary border-primary/30">محموله فعال</Badge>
-                  <CardTitle className="text-3xl font-mono text-white">{activeShipment.trackingNumber}</CardTitle>
-                  <CardDescription className="font-medium text-slate-300 mt-1">کانتینر: {activeShipment.containerNumber}</CardDescription>
+          <Card className="bg-[#0f172a] border-[#1e293b] border-t-4 border-t-[#38bdf8] shadow-2xl rounded-2xl overflow-hidden">
+            <CardHeader className="flex flex-col sm:flex-row items-center justify-between gap-4 pb-6">
+               <div className="text-center sm:text-right">
+                  <Badge variant="outline" className="mb-2 text-[#38bdf8] border-[#38bdf8]/30 font-bold px-3">محموله فعال</Badge>
+                  <CardTitle className="text-2xl md:text-3xl font-mono text-white leading-none">{activeShipment.trackingNumber}</CardTitle>
+                  <CardDescription className="font-bold text-slate-500 text-xs mt-2 uppercase tracking-wide">Container: {activeShipment.containerNumber}</CardDescription>
                </div>
-               <div className="text-left flex flex-col items-start">
-                  <span className="text-[10px] text-slate-500 uppercase tracking-widest">Estimated Delivery</span>
-                  <span className="text-xl font-bold text-primary">{activeShipment.estimatedDelivery}</span>
+               <div className="text-center sm:text-left flex flex-col sm:items-start bg-[#1e293b]/50 p-3 rounded-xl border border-[#334155]/30">
+                  <span className="text-[9px] text-slate-500 uppercase font-black tracking-widest mb-1">Estimated Arrival</span>
+                  <span className="text-xl font-black text-[#38bdf8]">{activeShipment.estimatedDelivery}</span>
                </div>
             </CardHeader>
-            <CardContent className="space-y-8">
-               <div className="grid grid-cols-1 md:grid-cols-2 gap-8 py-6 border-y border-slate-800">
-                  <div className="flex items-start gap-4">
-                     <div className="p-3 bg-slate-800 rounded-xl"><Ship className="w-6 h-6 text-slate-400" /></div>
-                     <div className="flex flex-col">
-                        <span className="text-xs text-slate-500 font-bold uppercase tracking-wide">بندر مبدا</span>
-                        <span className="text-xl font-black">{activeShipment.origin}</span>
+            <CardContent className="space-y-8 px-4 sm:px-6">
+               <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 py-6 border-y border-[#1e293b]">
+                  <div className="flex items-center gap-4">
+                     <div className="w-10 h-10 bg-[#1e293b] rounded-xl flex items-center justify-center shrink-0"><Ship className="w-5 h-5 text-slate-400" /></div>
+                     <div className="flex flex-col min-w-0">
+                        <span className="text-[10px] text-slate-500 font-black uppercase tracking-wider mb-0.5">Origin Port</span>
+                        <span className="text-lg font-black text-slate-100 truncate">{activeShipment.origin}</span>
                      </div>
                   </div>
-                  <div className="flex items-start gap-4 md:text-right md:justify-end">
-                     <div className="flex flex-col md:items-end">
-                        <span className="text-xs text-slate-500 font-bold uppercase tracking-wide">بندر مقصد</span>
-                        <span className="text-xl font-black">{activeShipment.destination}</span>
+                  <div className="flex items-center gap-4 sm:flex-row-reverse">
+                     <div className="w-10 h-10 bg-[#1e293b] rounded-xl flex items-center justify-center shrink-0"><Truck className="w-5 h-5 text-slate-400" /></div>
+                     <div className="flex flex-col sm:text-left min-w-0">
+                        <span className="text-[10px] text-slate-500 font-black uppercase tracking-wider mb-0.5">Final Destination</span>
+                        <span className="text-lg font-black text-slate-100 truncate">{activeShipment.destination}</span>
                      </div>
-                     <div className="p-3 bg-slate-800 rounded-xl order-first md:order-last"><Truck className="w-6 h-6 text-slate-400" /></div>
                   </div>
                </div>
 

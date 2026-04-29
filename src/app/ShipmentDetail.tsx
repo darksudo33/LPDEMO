@@ -34,7 +34,8 @@ import {
   ExternalLink,
   ChevronLeft,
   Edit,
-  Settings
+  Settings,
+  X
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -48,7 +49,8 @@ import {
   DialogTitle, 
   DialogFooter,
   DialogDescription,
-  DialogTrigger
+  DialogTrigger,
+  DialogClose
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -365,54 +367,64 @@ export default function ShipmentDetail() {
   const [isCustomerSummaryOpen, setIsCustomerSummaryOpen] = useState(false);
 
   return (
-    <div className="p-6 space-y-6 font-sans text-right" dir="rtl">
+    <div className="p-4 md:p-6 space-y-4 md:space-y-6 font-sans text-right" dir="rtl">
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3 md:gap-4 truncate">
           <Button 
             variant="ghost" 
             size="icon" 
-            className="bg-[#1e293b] text-slate-400 hover:text-white rounded-xl"
+            className="bg-[#1e293b] text-slate-400 hover:text-white rounded-xl h-10 w-10 shrink-0"
             onClick={() => navigate("/shipments")}
           >
             <ArrowRight className="w-5 h-5" />
           </Button>
-          <div>
-            <div className="flex items-center gap-2 mb-1">
-              <h1 className="text-2xl font-black text-[#f8fafc]">{shipment.trackingNumber}</h1>
-              <StatusBadge status={shipment.status} />
+          <div className="min-w-0">
+            <div className="flex items-center gap-2 mb-0.5 md:mb-1">
+              <h1 className="text-xl md:text-2xl font-black text-[#f8fafc] truncate">{shipment.trackingNumber}</h1>
+              <div className="shrink-0 scale-90 md:scale-100 origin-right">
+                <StatusBadge status={shipment.status} />
+              </div>
             </div>
-            <div className="flex items-center gap-3 text-slate-500 text-xs">
-              <span className="flex items-center gap-1"><UserPlus className="w-3.5 h-3.5" /> {shipment.customerName}</span>
-              <span className="w-1 h-1 rounded-full bg-slate-700" />
-              <span className="flex items-center gap-1 font-mono tracking-wider">{shipment.containerNumber}</span>
+            <div className="flex items-center gap-2 md:gap-3 text-slate-500 text-[10px] md:text-xs">
+              <span className="flex items-center gap-1 truncate"><UserPlus className="w-3.5 h-3.5" /> {shipment.customerName}</span>
+              <span className="w-1 h-1 rounded-full bg-slate-700 shrink-0" />
+              <span className="flex items-center gap-1 font-mono tracking-wider truncate">{shipment.containerNumber}</span>
             </div>
           </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
           <Dialog open={isCustomerSummaryOpen} onOpenChange={setIsCustomerSummaryOpen}>
             <DialogTrigger
               render={
-                <Button variant="outline" className="border-[#1e293b] bg-[#1e293b]/50 text-slate-300 gap-2 font-bold h-10 px-6 rounded-xl hover:bg-[#38bdf8] hover:text-[#020617] transition-all">
+                <Button variant="outline" className="border-[#1e293b] bg-[#1e293b]/50 text-slate-300 gap-2 font-bold h-10 px-4 md:px-6 rounded-xl hover:bg-[#38bdf8] hover:text-[#020617] transition-all text-xs">
                   <Users className="w-4 h-4" />
-                  خلاصه وضعیت مشتری
+                  خلاصه مشتری
                 </Button>
               }
             />
-            <DialogContent className="bg-[#0f172a] border-[#1e293b] text-[#f8fafc] text-right sm:max-w-2xl" dir="rtl">
-              <DialogHeader>
-                <div className="flex items-center gap-4 mb-2">
-                   <div className="w-12 h-12 rounded-2xl bg-[#38bdf8]/10 flex items-center justify-center text-[#38bdf8]">
-                      <Users className="w-6 h-6" />
-                   </div>
-                   <div>
-                      <DialogTitle className="text-xl font-black">{customer?.name || shipment.customerName}</DialogTitle>
-                      <DialogDescription className="text-slate-400 text-xs">{customer?.company || "شرکت بازرگانی مربوطه"}</DialogDescription>
-                   </div>
-                </div>
-              </DialogHeader>
-              
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 py-6">
+            <DialogContent className="bg-[#0f172a] border-[#1e293b] text-[#f8fafc] text-right sm:max-w-2xl p-0 overflow-hidden" dir="rtl">
+              <div className="p-6">
+                <DialogHeader className="relative pr-0">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-4">
+                       <div className="w-12 h-12 rounded-2xl bg-[#38bdf8]/10 flex items-center justify-center text-[#38bdf8]">
+                          <Users className="w-6 h-6" />
+                       </div>
+                       <div>
+                          <DialogTitle className="text-xl font-black">{customer?.name || shipment.customerName}</DialogTitle>
+                          <DialogDescription className="text-slate-400 text-xs">{customer?.company || "شرکت بازرگانی مربوطه"}</DialogDescription>
+                       </div>
+                    </div>
+                    <DialogClose render={
+                      <Button variant="ghost" size="icon" className="h-10 w-10 text-slate-500 hover:text-white hover:bg-[#1e293b] rounded-xl">
+                        <X className="w-5 h-5" />
+                      </Button>
+                    } />
+                  </div>
+                </DialogHeader>
+                
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 py-6">
                 <div className="bg-[#1e293b]/50 p-4 rounded-2xl border border-[#334155]/30">
                   <p className="text-[10px] text-slate-500 uppercase tracking-widest mb-1">کل محموله‌ها</p>
                   <p className="text-2xl font-black text-[#38bdf8]">{customerShipments.length}</p>
@@ -470,70 +482,81 @@ export default function ShipmentDetail() {
                 </div>
               </div>
 
-              <DialogFooter className="mt-6">
-                <Button className="w-full bg-[#38bdf8] text-[#020617] font-extrabold h-12 rounded-xl" onClick={() => navigate(`/customers`)}>
+              <DialogFooter className="mt-6 flex flex-col sm:flex-row gap-3">
+                <DialogClose render={
+                  <Button 
+                    variant="outline" 
+                    className="w-full sm:w-auto h-12 border-[#1e293b] bg-transparent text-slate-400 hover:bg-slate-800 hover:text-white rounded-xl font-bold order-2 sm:order-1 px-8"
+                  >
+                     بستن
+                  </Button>
+                } />
+                <Button className="flex-1 bg-[#38bdf8] hover:bg-[#38bdf8]/90 text-[#020617] font-extrabold h-12 rounded-xl order-1 sm:order-2 shadow-lg shadow-[#38bdf8]/10" onClick={() => navigate(`/customers`)}>
                    مشاهده پرونده کامل مشتری
                 </Button>
               </DialogFooter>
+              </div>
             </DialogContent>
           </Dialog>
           <Button 
-            className="bg-[#38bdf8] hover:bg-[#38bdf8]/90 text-[#020617] font-extrabold h-10 px-8 rounded-xl shadow-lg shadow-[#38bdf8]/10"
+            className="bg-[#38bdf8] hover:bg-[#38bdf8]/90 text-[#020617] font-extrabold h-10 px-6 md:px-8 rounded-xl shadow-lg shadow-[#38bdf8]/10 text-xs"
             onClick={() => navigate(`/shipments/${shipment.id}/edit`)}
           >
             <Edit className="w-4 h-4 ml-2" />
-            ویرایش اطلاعات
+            ویرایش بار
           </Button>
         </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left Column - Details */}
-        <div className="lg:col-span-2 space-y-6">
-          <Card className="bg-[#0f172a] border-[#1e293b] rounded-3xl shadow-2xl border-t-4 border-t-[#38bdf8] overflow-hidden">
-            <CardContent className="p-6">
+        <div className="lg:col-span-2 space-y-4 md:space-y-6">
+          <Card className="bg-[#0f172a] border-[#1e293b] rounded-2xl md:rounded-3xl shadow-2xl border-t-4 border-t-[#38bdf8] overflow-hidden">
+            <CardContent className="p-4 md:p-6">
               <DocumentView shipmentId={shipment.id} />
             </CardContent>
           </Card>
 
           <Tabs defaultValue="steps" className="w-full">
-            <TabsList className="bg-[#0f172a] border border-[#1e293b] p-1 rounded-xl mb-4">
-              <TabsTrigger value="steps" className="data-[state=active]:bg-[#38bdf8] data-[state=active]:text-[#020617] rounded-lg px-6 text-xs font-bold">
-                مراحل عملیاتی
-              </TabsTrigger>
-              <TabsTrigger value="info" className="data-[state=active]:bg-[#38bdf8] data-[state=active]:text-[#020617] rounded-lg px-6 text-xs font-bold">
-                جزییات بار
-              </TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="steps" className="space-y-6 focus-visible:outline-none">
+            <TabsContent value="steps" className="space-y-4 md:space-y-6 focus-visible:outline-none">
               {/* Progress Overview */}
               <Card className="bg-[#0f172a] border-[#1e293b] rounded-2xl overflow-hidden shadow-xl border-t-2 border-t-[#38bdf8]/20">
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center gap-2">
-                      <Truck className="w-5 h-5 text-[#38bdf8]" />
-                      <h3 className="font-bold text-slate-200">وضعیت پیشرفت لجستیک</h3>
-                    </div>
-                    <span className="text-2xl font-black text-[#38bdf8]">{progressPercent}%</span>
+                <CardHeader className="p-4 border-b border-[#1e293b]/50 flex flex-row items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Truck className="w-4 h-4 md:w-5 md:h-5 text-[#38bdf8]" />
+                    <h3 className="font-bold text-xs md:text-base text-slate-200">پیشرفت لجستیک</h3>
                   </div>
-                  <Progress value={progressPercent} className="h-3 bg-[#1e293b]" />
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-8">
-                    <div className="bg-[#1e293b]/30 p-3 rounded-xl border border-[#334155]/30">
-                      <p className="text-[10px] text-slate-500 mb-1 uppercase tracking-wider">مبداء</p>
-                      <p className="text-sm font-bold truncate">{shipment.origin}</p>
+                  <TabsList className="bg-[#1e293b] p-0.5 rounded-lg h-8">
+                    <TabsTrigger value="steps" className="data-[state=active]:bg-[#38bdf8] data-[state=active]:text-[#020617] rounded-md px-3 h-7 text-[9px] md:text-xs font-black">
+                      مراحل
+                    </TabsTrigger>
+                    <TabsTrigger value="info" className="data-[state=active]:bg-[#38bdf8] data-[state=active]:text-[#020617] rounded-md px-3 h-7 text-[9px] md:text-xs font-black">
+                      جزییات
+                    </TabsTrigger>
+                  </TabsList>
+                </CardHeader>
+                <CardContent className="p-4 md:p-6 focus-visible:outline-none">
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="text-[10px] text-slate-500">درصد تکمیل فرآیند</span>
+                    <span className="text-xl md:text-2xl font-black text-[#38bdf8]">{progressPercent}%</span>
+                  </div>
+                  <Progress value={progressPercent} className="h-2 md:h-3 bg-[#1e293b]" />
+                  <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-2 md:gap-4 mt-6 md:mt-8">
+                    <div className="bg-[#1e293b]/30 p-2 md:p-3 rounded-xl border border-[#334155]/30">
+                      <p className="text-[8px] md:text-[10px] text-slate-500 mb-0.5 md:mb-1 uppercase tracking-wider">مبداء</p>
+                      <p className="text-[10px] md:text-sm font-bold truncate">{shipment.origin}</p>
                     </div>
-                    <div className="bg-[#1e293b]/30 p-3 rounded-xl border border-[#334155]/30">
-                      <p className="text-[10px] text-slate-500 mb-1 uppercase tracking-wider">مقصد</p>
-                      <p className="text-sm font-bold truncate">{shipment.destination}</p>
+                    <div className="bg-[#1e293b]/30 p-2 md:p-3 rounded-xl border border-[#334155]/30">
+                      <p className="text-[8px] md:text-[10px] text-slate-500 mb-0.5 md:mb-1 uppercase tracking-wider">مقصد</p>
+                      <p className="text-[10px] md:text-sm font-bold truncate">{shipment.destination}</p>
                     </div>
-                    <div className="bg-[#1e293b]/30 p-3 rounded-xl border border-[#334155]/30">
-                      <p className="text-[10px] text-slate-500 mb-1 uppercase tracking-wider">تاریخ ثبت</p>
-                      <p className="text-sm font-bold truncate">{shipment.createdAt}</p>
+                    <div className="bg-[#1e293b]/30 p-2 md:p-3 rounded-xl border border-[#334155]/30">
+                      <p className="text-[8px] md:text-[10px] text-slate-500 mb-0.5 md:mb-1 uppercase tracking-wider">ثبت</p>
+                      <p className="text-[10px] md:text-sm font-bold truncate">{shipment.createdAt}</p>
                     </div>
-                    <div className="bg-[#1e293b]/30 p-3 rounded-xl border border-[#334155]/30">
-                      <p className="text-[10px] text-slate-500 mb-1 uppercase tracking-wider font-bold text-[#38bdf8]">زمان تقریبی تحویل</p>
-                      <p className="text-sm font-bold truncate text-[#38bdf8]">{shipment.estimatedDelivery}</p>
+                    <div className="bg-[#1e293b]/30 p-2 md:p-3 rounded-xl border border-[#334155]/30 ring-1 ring-[#38bdf8]/20">
+                      <p className="text-[8px] md:text-[10px] text-[#38bdf8] mb-0.5 md:mb-1 uppercase tracking-wider font-black">زمان تحویل</p>
+                      <p className="text-[10px] md:text-sm font-bold truncate text-[#38bdf8]">{shipment.estimatedDelivery}</p>
                     </div>
                   </div>
                 </CardContent>
@@ -541,40 +564,40 @@ export default function ShipmentDetail() {
 
               {/* Shipment Timeline / Steps */}
               <Card className="bg-[#0f172a] border-[#1e293b] rounded-2xl shadow-xl">
-                <CardHeader className="border-b border-[#1e293b]/50">
-                  <CardTitle className="text-lg font-bold flex items-center gap-2">
-                    <Package className="w-5 h-5 text-slate-400" />
-                    مراحل فرآیند حمل و ترخیص
+                <CardHeader className="p-4 border-b border-[#1e293b]/50">
+                  <CardTitle className="text-sm md:text-lg font-bold flex items-center gap-2">
+                    <Package className="w-4 h-4 md:w-5 md:h-5 text-slate-400" />
+                    فرآیند حمل و ترخیص
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="p-6">
+                <CardContent className="p-4 md:p-6">
                   <div className="relative">
                     {/* Vertical Line */}
-                    <div className="absolute top-0 bottom-0 right-4 w-0.5 bg-[#1e293b]" />
+                    <div className="absolute top-0 bottom-0 right-[13px] md:right-4 w-0.5 bg-[#1e293b]" />
                     
-                    <div className="space-y-8 relative">
+                    <div className="space-y-6 md:space-y-8 relative">
                       {steps.map((step, index) => {
                         const linkedTasks = shipmentTasks.filter(t => t.title.includes(step.name));
                         return (
-                          <div key={step.id} className="flex gap-6">
+                          <div key={step.id} className="flex gap-3 md:gap-6">
                             <div className="relative flex flex-col items-center">
                               <div className={cn(
-                                "w-8 h-8 rounded-full flex items-center justify-center z-10 border-4 border-[#0f172a]",
+                                "w-7 h-7 md:w-8 md:h-8 rounded-full flex items-center justify-center z-10 border-4 border-[#0f172a] shrink-0",
                                 step.status === "COMPLETED" ? "bg-emerald-500 text-white" : 
                                 step.status === "IN_PROGRESS" ? "bg-[#38bdf8] text-[#020617] animate-pulse" : 
                                 "bg-slate-800 text-slate-500"
                               )}>
-                                {step.status === "COMPLETED" ? <CheckCircle2 className="w-4 h-4" /> : 
-                                 step.status === "IN_PROGRESS" ? <Clock className="w-4 h-4" /> : 
-                                 <div className="w-2 h-2 rounded-full bg-current" />}
+                                {step.status === "COMPLETED" ? <CheckCircle2 className="w-3.5 h-3.5 md:w-4 md:h-4" /> : 
+                                 step.status === "IN_PROGRESS" ? <Clock className="w-3.5 h-3.5 md:w-4 md:h-4" /> : 
+                                 <div className="w-1.5 h-1.5 rounded-full bg-current" />}
                               </div>
                             </div>
-                            <div className="flex-1 bg-[#1e293b]/30 rounded-2xl p-4 border border-[#334155]/20 hover:border-[#38bdf8]/30 transition-all group">
-                              <div className="flex items-start justify-between">
-                                <div>
-                                  <div className="flex items-center gap-2 mb-1">
+                            <div className="flex-1 bg-[#1e293b]/30 rounded-2xl p-2.5 md:p-4 border border-[#334155]/20 hover:border-[#38bdf8]/30 transition-all group">
+                              <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-2.5 md:gap-3">
+                                <div className="min-w-0">
+                                  <div className="flex flex-col sm:flex-row sm:items-center gap-1 md:gap-2 mb-1">
                                     <h4 className={cn(
-                                      "font-bold text-sm",
+                                      "font-black text-[10px] md:text-sm truncate",
                                       step.status === "COMPLETED" ? "text-slate-200" : 
                                       step.status === "IN_PROGRESS" ? "text-[#38bdf8]" : 
                                       "text-slate-500"
@@ -582,42 +605,42 @@ export default function ShipmentDetail() {
                                       {step.name}
                                     </h4>
                                     {step.completedAt && (
-                                      <span className="text-[10px] text-slate-600 font-mono">{step.completedAt}</span>
+                                      <span className="text-[8px] md:text-[10px] text-slate-600 font-mono shrink-0">{step.completedAt}</span>
                                     )}
                                   </div>
-                                  <p className="text-xs text-slate-500 leading-relaxed max-w-lg">
+                                  <p className="text-[9px] md:text-xs text-slate-600 group-hover:text-slate-400 leading-relaxed max-w-lg transition-colors">
                                     {step.notes || `فرآیند عملیاتی مربوط به مرحله ${step.name} در محموله لجستیکی.`}
                                   </p>
                                   
                                   {linkedTasks.length > 0 && (
-                                    <div className="mt-3 flex flex-wrap gap-2">
+                                    <div className="mt-2 flex flex-wrap gap-1">
                                       {linkedTasks.map(task => (
-                                        <Badge key={task.id} variant="outline" className="bg-[#0f172a]/50 text-[10px] gap-1.5 py-1 px-2 border-[#334155]">
-                                          <div className={cn("w-1.5 h-1.5 rounded-full", task.status === "DONE" ? "bg-emerald-500" : "bg-[#38bdf8]")} />
-                                          {task.assignedToName}: {task.status === "DONE" ? "تکمیل شده" : "درحال انجام"}
+                                        <Badge key={task.id} variant="outline" className="bg-[#0f172a]/50 text-[7px] md:text-[10px] gap-1 py-0 px-1 md:px-2 border-[#334155] rounded-md">
+                                          <div className={cn("w-1 h-1 md:w-1.5 md:h-1.5 rounded-full", task.status === "DONE" ? "bg-emerald-500" : "bg-[#38bdf8]")} />
+                                          {task.assignedToName}
                                         </Badge>
                                       ))}
                                     </div>
                                   )}
                                 </div>
                                 
-                                <div className="flex items-center gap-2">
+                                <div className="flex items-center justify-start sm:justify-end gap-1.5 shrink-0 border-t border-[#1e293b]/50 sm:border-t-0 pt-2.5 sm:pt-0">
                                    {EMPLOYEE_MANAGED_STEPS.includes(step.name) && step.status !== "COMPLETED" && (
                                      <Button 
                                        variant="ghost" 
                                        size="sm" 
-                                       className="h-8 text-[11px] font-bold text-[#38bdf8] hover:bg-[#38bdf8]/10 px-3 rounded-lg"
+                                       className="h-6 md:h-8 text-[8px] md:text-[11px] font-black text-[#38bdf8] hover:bg-[#38bdf8]/10 px-2 md:px-3 rounded-lg"
                                        onClick={() => {
                                          setSelectedStep(step);
                                          setIsAssignDialogOpen(true);
                                        }}
                                      >
-                                       <UserPlus className="w-3.5 h-3.5 ml-1.5" />
-                                       ارجاع وظیفه
+                                       <UserPlus className="w-3 md:w-3.5 h-3 md:h-3.5 ml-1 md:ml-1.5" />
+                                       ارجاع
                                      </Button>
                                    )}
-                                   <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-600 hover:text-white">
-                                     <MoreVertical className="w-4 h-4" />
+                                   <Button variant="ghost" size="icon" className="h-6 w-6 md:h-8 md:w-8 text-slate-600 hover:text-white rounded-lg">
+                                     <MoreVertical className="w-3 h-3 md:w-4 md:h-4" />
                                    </Button>
                                 </div>
                               </div>
@@ -632,45 +655,59 @@ export default function ShipmentDetail() {
             </TabsContent>
 
             <TabsContent value="info" className="focus-visible:outline-none">
-              <Card className="bg-[#0f172a] border-[#1e293b] rounded-2xl shadow-xl">
-                <CardContent className="p-6">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <Card className="bg-[#0f172a] border-[#1e293b] rounded-2xl shadow-xl border-t-2 border-t-[#38bdf8]/20 ">
+                <CardHeader className="p-4 border-b border-[#1e293b]/50 flex flex-row items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Info className="w-4 h-4 md:w-5 md:h-5 text-[#38bdf8]" />
+                    <h3 className="font-bold text-xs md:text-base text-slate-200">اطلاعات تکمیلی بار</h3>
+                  </div>
+                  <TabsList className="bg-[#1e293b] p-0.5 rounded-lg h-8">
+                    <TabsTrigger value="steps" className="data-[state=active]:bg-[#38bdf8] data-[state=active]:text-[#020617] rounded-md px-3 h-7 text-[9px] md:text-xs font-black">
+                      مراحل
+                    </TabsTrigger>
+                    <TabsTrigger value="info" className="data-[state=active]:bg-[#38bdf8] data-[state=active]:text-[#020617] rounded-md px-3 h-7 text-[9px] md:text-xs font-black">
+                      جزییات
+                    </TabsTrigger>
+                  </TabsList>
+                </CardHeader>
+                <CardContent className="p-4 md:p-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
                     <div className="space-y-4">
-                      <h4 className="text-sm font-bold text-[#38bdf8] border-r-2 border-[#38bdf8] pr-3">مشخصات کانتینر و کالا</h4>
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="bg-[#1e293b]/20 p-3 rounded-xl border border-[#334155]/20">
-                          <p className="text-[10px] text-slate-500 mb-1">نوع کانتینر</p>
-                          <p className="text-xs font-bold text-slate-200">40ft High Cube</p>
+                      <h4 className="text-xs md:text-sm font-bold text-[#38bdf8] border-r-2 border-[#38bdf8] pr-3">مشخصات کانتینر</h4>
+                      <div className="grid grid-cols-2 gap-3 md:gap-4">
+                        <div className="bg-[#1e293b]/20 p-2.5 md:p-3 rounded-xl border border-[#334155]/20">
+                          <p className="text-[9px] md:text-[10px] text-slate-500 mb-0.5 md:mb-1">نوع کانتینر</p>
+                          <p className="text-[11px] md:text-xs font-bold text-slate-200">40ft High Cube</p>
                         </div>
-                        <div className="bg-[#1e293b]/20 p-3 rounded-xl border border-[#334155]/20">
-                          <p className="text-[10px] text-slate-500 mb-1">تعداد واحد</p>
-                          <p className="text-xs font-bold text-slate-200">۲ دستگاه</p>
+                        <div className="bg-[#1e293b]/20 p-2.5 md:p-3 rounded-xl border border-[#334155]/20">
+                          <p className="text-[9px] md:text-[10px] text-slate-500 mb-0.5 md:mb-1">تعداد واحد</p>
+                          <p className="text-[11px] md:text-xs font-bold text-slate-200">۲ دستگاه</p>
                         </div>
-                        <div className="bg-[#1e293b]/20 p-3 rounded-xl border border-[#334155]/20">
-                          <p className="text-[10px] text-slate-500 mb-1">وزن کل</p>
-                          <p className="text-xs font-bold text-slate-200">۱۲,۴۰۰ کیلوگرم</p>
+                        <div className="bg-[#1e293b]/20 p-2.5 md:p-3 rounded-xl border border-[#334155]/20">
+                          <p className="text-[9px] md:text-[10px] text-slate-500 mb-0.5 md:mb-1">وزن کل</p>
+                          <p className="text-[11px] md:text-xs font-bold text-slate-200">۱۲,۴۰۰ کیلوگرم</p>
                         </div>
-                        <div className="bg-[#1e293b]/20 p-3 rounded-xl border border-[#334155]/20">
-                          <p className="text-[10px] text-slate-500 mb-1">حجم (CBM)</p>
-                          <p className="text-xs font-bold text-slate-200">۱۲۰ متر مکعب</p>
+                        <div className="bg-[#1e293b]/20 p-2.5 md:p-3 rounded-xl border border-[#334155]/20">
+                          <p className="text-[9px] md:text-[10px] text-slate-500 mb-0.5 md:mb-1">حجم (CBM)</p>
+                          <p className="text-[11px] md:text-xs font-bold text-slate-200">۱۲۰ متر مکعب</p>
                         </div>
                       </div>
                     </div>
                     
                     <div className="space-y-4">
-                      <h4 className="text-sm font-bold text-[#38bdf8] border-r-2 border-[#38bdf8] pr-3">اطلاعات ترخیص و گمرک</h4>
-                      <div className="space-y-3">
-                        <div className="flex items-center justify-between p-3 bg-[#1e293b]/20 rounded-xl border border-[#334155]/20">
-                          <span className="text-xs text-slate-400">کد تعرفه (HS Code)</span>
-                          <span className="text-xs font-mono font-bold text-slate-200">8471.30.00</span>
+                      <h4 className="text-xs md:text-sm font-bold text-[#38bdf8] border-r-2 border-[#38bdf8] pr-3">اطلاعات گمرکی</h4>
+                      <div className="space-y-2 md:space-y-3">
+                        <div className="flex items-center justify-between p-2.5 md:p-3 bg-[#1e293b]/20 rounded-xl border border-[#334155]/20">
+                          <span className="text-[11px] md:text-xs text-slate-400">کد تعرفه (HS)</span>
+                          <span className="text-[11px] md:text-xs font-mono font-bold text-slate-200">8471.30.00</span>
                         </div>
-                        <div className="flex items-center justify-between p-3 bg-[#1e293b]/20 rounded-xl border border-[#334155]/20">
-                          <span className="text-xs text-slate-400">کشور سازنده</span>
-                          <span className="text-xs font-bold text-slate-200">چین</span>
+                        <div className="flex items-center justify-between p-2.5 md:p-3 bg-[#1e293b]/20 rounded-xl border border-[#334155]/20">
+                          <span className="text-[11px] md:text-xs text-slate-400">کشور سازنده</span>
+                          <span className="text-[11px] md:text-xs font-bold text-slate-200">چین</span>
                         </div>
-                        <div className="flex items-center justify-between p-3 bg-[#1e293b]/20 rounded-xl border border-[#334155]/20">
-                          <span className="text-xs text-slate-400">ارزش اظهاری</span>
-                          <span className="text-xs font-bold text-emerald-400">$۴۵,۰۰۰ USD</span>
+                        <div className="flex items-center justify-between p-2.5 md:p-3 bg-[#1e293b]/20 rounded-xl border border-[#334155]/20">
+                          <span className="text-[11px] md:text-xs text-slate-400">ارزش اظهاری</span>
+                          <span className="text-[11px] md:text-xs font-bold text-emerald-400">$۴۵,۰۰۰ USD</span>
                         </div>
                       </div>
                     </div>
@@ -682,65 +719,65 @@ export default function ShipmentDetail() {
         </div>
 
         {/* Right Column - Info Bar */}
-        <div className="space-y-6">
+        <div className="space-y-4 md:space-y-6">
           <Card className="bg-[#0f172a] border-[#1e293b] rounded-2xl shadow-xl overflow-hidden">
-             <div className="bg-[#38bdf8] p-4 text-[#020617] h-24 relative overflow-hidden">
-                < Ship className="w-32 h-32 absolute -bottom-8 -left-8 opacity-10" />
-                <h3 className="font-black text-lg">اطلاعات حمل</h3>
-                <p className="text-[11px] opacity-70 font-bold uppercase tracking-widest">Logistic Core Info</p>
+             <div className="bg-[#38bdf8] p-4 md:p-5 text-[#020617] h-20 md:h-24 relative overflow-hidden">
+                < Ship className="w-24 md:w-32 h-24 md:h-32 absolute -bottom-6 md:-bottom-8 -left-6 md:-left-8 opacity-10" />
+                <h3 className="font-black text-base md:text-lg">اطلاعات حمل</h3>
+                <p className="text-[9px] md:text-[11px] opacity-70 font-bold uppercase tracking-widest">Logistic Core Info</p>
              </div>
-             <CardContent className="p-6 space-y-6">
-                <div className="space-y-4">
+             <CardContent className="p-4 md:p-6 space-y-4 md:space-y-6">
+                <div className="space-y-3 md:space-y-4">
                    <div className="flex items-start gap-3">
-                      <div className="w-8 h-8 rounded-xl bg-[#1e293b] flex items-center justify-center text-slate-400">
-                         <Anchor className="w-4 h-4" />
+                      <div className="w-7 h-7 md:w-8 md:h-8 rounded-xl bg-[#1e293b] flex items-center justify-center text-slate-400 shrink-0">
+                         <Anchor className="w-3.5 h-3.5 md:w-4 md:h-4" />
                       </div>
-                      <div>
-                         <p className="text-[10px] text-slate-500 mb-0.5">بندر بارگیری (POL)</p>
-                         <p className="text-xs font-bold text-slate-200">{shipment.origin}</p>
+                      <div className="min-w-0">
+                         <p className="text-[9px] md:text-[10px] text-slate-500 mb-0.5">بندر بارگیری (POL)</p>
+                         <p className="text-[11px] md:text-xs font-bold text-slate-200 truncate">{shipment.origin}</p>
                       </div>
                    </div>
                    <div className="flex items-start gap-3">
-                      <div className="w-8 h-8 rounded-xl bg-[#1e293b] flex items-center justify-center text-slate-400">
-                         <MapPin className="w-4 h-4" />
+                      <div className="w-7 h-7 md:w-8 md:h-8 rounded-xl bg-[#1e293b] flex items-center justify-center text-slate-400 shrink-0">
+                         <MapPin className="w-3.5 h-3.5 md:w-4 md:h-4" />
                       </div>
-                      <div>
-                         <p className="text-[10px] text-slate-500 mb-0.5">بندر تخلیه (POD)</p>
-                         <p className="text-xs font-bold text-slate-200">{shipment.destination}</p>
+                      <div className="min-w-0">
+                         <p className="text-[9px] md:text-[10px] text-slate-500 mb-0.5">بندر تخلیه (POD)</p>
+                         <p className="text-[11px] md:text-xs font-bold text-slate-200 truncate">{shipment.destination}</p>
                       </div>
                    </div>
                    <div className="flex items-start gap-3">
-                      <div className="w-8 h-8 rounded-xl bg-[#1e293b] flex items-center justify-center text-slate-400">
-                         <Clock className="w-4 h-4" />
+                      <div className="w-7 h-7 md:w-8 md:h-8 rounded-xl bg-[#1e293b] flex items-center justify-center text-slate-400 shrink-0">
+                         <Clock className="w-3.5 h-3.5 md:w-4 md:h-4" />
                       </div>
-                      <div>
-                         <p className="text-[10px] text-slate-500 mb-0.5">فری تایم مقصد</p>
-                         <p className="text-xs font-bold text-emerald-400">{shipment.freeTimeDays} روز کانتینری</p>
+                      <div className="min-w-0">
+                         <p className="text-[9px] md:text-[10px] text-slate-500 mb-0.5">فری تایم مقصد</p>
+                         <p className="text-[11px] md:text-xs font-bold text-emerald-400">{shipment.freeTimeDays} روز کانتینری</p>
                       </div>
                    </div>
                 </div>
 
-                <div className="pt-6 border-t border-[#1e293b]">
-                  <h4 className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-4">تیم عملیاتی</h4>
-                  <div className="space-y-3">
+                <div className="pt-4 md:pt-6 border-t border-[#1e293b]">
+                  <h4 className="text-[9px] md:text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-3 md:mb-4">تیم عملیاتی</h4>
+                  <div className="space-y-2.5 md:space-y-3">
                      {users.slice(0, 3).map(user => (
                        <div key={user.id} className="flex items-center gap-3">
-                          <Avatar className="w-8 h-8 border border-[#1e293b]">
+                          <Avatar className="w-7 h-7 md:w-8 md:h-8 border border-[#1e293b] shrink-0">
                             <AvatarImage src={user.avatar} />
-                            <AvatarFallback className="bg-slate-800 text-[10px]">{user.name[0]}</AvatarFallback>
+                            <AvatarFallback className="bg-slate-800 text-[9px]">{user.name[0]}</AvatarFallback>
                           </Avatar>
-                          <div className="flex-1">
-                            <p className="text-xs font-bold text-slate-300">{user.name}</p>
-                            <p className="text-[9px] text-slate-600">{user.role}</p>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-[11px] md:text-xs font-bold text-slate-300 truncate">{user.name}</p>
+                            <p className="text-[8px] md:text-[9px] text-slate-600 truncate">{user.role}</p>
                           </div>
-                          <div className="w-1.5 h-1.5 rounded-full bg-green-500" />
+                          <div className="w-1.5 h-1.5 rounded-full bg-green-500 shrink-0" />
                        </div>
                      ))}
                   </div>
                 </div>
 
-                <Button variant="outline" className="w-full border-[#1e293b] hover:bg-[#1e293b] text-slate-400 text-xs font-bold gap-2 rounded-xl py-6">
-                  <Info className="w-4 h-4" />
+                <Button variant="outline" className="w-full border-[#1e293b] hover:bg-[#1e293b] text-slate-400 text-[10px] md:text-xs font-bold gap-2 rounded-xl h-10 md:h-14">
+                  <Info className="w-3.5 h-3.5 md:w-4 md:h-4" />
                   مشاهده پروفایل مشتری
                 </Button>
              </CardContent>
