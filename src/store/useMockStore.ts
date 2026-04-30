@@ -1,6 +1,6 @@
 import { create } from "zustand";
-import { User, Customer, Shipment, Task, Message, ActivityLog, Demurrage, ShipmentStep, ShipmentStatus, TaskStatus, ShipmentDocument, Channel, Notification } from "../types";
-import { mockUsers, mockCustomers, mockShipments, mockTasks, mockMessages, mockActivityLogs, mockDemurrage, defaultSteps, mockDocuments, mockChannels, mockNotifications } from "../lib/mockData";
+import { User, Customer, Shipment, Task, Message, ActivityLog, Demurrage, ShipmentStep, ShipmentStatus, TaskStatus, ShipmentDocument, Channel, Notification, Appointment, AppointmentStatus, Cheque } from "../types";
+import { mockUsers, mockCustomers, mockShipments, mockTasks, mockMessages, mockActivityLogs, mockDemurrage, defaultSteps, mockDocuments, mockChannels, mockNotifications, mockAppointments, mockCheques } from "../lib/mockData";
 
 interface MockStore {
   currentUser: User | null;
@@ -15,6 +15,7 @@ interface MockStore {
   documents: ShipmentDocument[];
   channels: Channel[];
   notifications: Notification[];
+  appointments: Appointment[];
 
   setCurrentUser: (user: User | null) => void;
   addShipment: (shipment: Omit<Shipment, "id">) => void;
@@ -35,6 +36,22 @@ interface MockStore {
   markNotificationRead: (id: string) => void;
   markAllNotificationsRead: () => void;
   updateCurrentUser: (updates: Partial<User>) => void;
+  addAppointment: (appointment: Omit<Appointment, "id" | "createdAt" | "reminderSent">) => void;
+  updateAppointment: (id: string, updates: Partial<Appointment>) => void;
+  deleteAppointment: (id: string) => void;
+  cheques: Cheque[];
+  addCheque: (cheque: Omit<Cheque, "id" | "createdAt">) => void;
+  updateCheque: (id: string, updates: Partial<Cheque>) => void;
+  deleteCheque: (id: string) => void;
+  archiveShipment: (id: string) => void;
+  archiveCheque: (id: string) => void;
+  archiveDocument: (id: string) => void;
+  unarchiveShipment: (id: string) => void;
+  unarchiveCheque: (id: string, originalStatus?: any) => void;
+  unarchiveDocument: (id: string) => void;
+  permanentDeleteShipment: (id: string) => void;
+  permanentDeleteCheque: (id: string) => void;
+  permanentDeleteDocument: (id: string) => void;
 }
 
 export const useMockStore = create<MockStore>((set) => ({
@@ -59,6 +76,8 @@ export const useMockStore = create<MockStore>((set) => ({
   documents: mockDocuments,
   channels: mockChannels,
   notifications: mockNotifications,
+  appointments: mockAppointments,
+  cheques: mockCheques,
 
   setCurrentUser: (user) => set({ currentUser: user }),
 
@@ -281,5 +300,229 @@ export const useMockStore = create<MockStore>((set) => ({
   updateCurrentUser: (updates) => set((state) => ({
     currentUser: state.currentUser ? { ...state.currentUser, ...updates } : null,
     users: state.users.map(u => u.id === state.currentUser?.id ? { ...u, ...updates } : u)
+  })),
+  addAppointment: (appointment) => set((state) => {
+    const newAppointment: Appointment = {
+      ...appointment,
+      id: `ap${Date.now()}`,
+      createdAt: new Date().toISOString(),
+      reminderSent: false
+    };
+    const log: ActivityLog = {
+      id: `l${Date.now()}-ap-add`,
+      userName: state.currentUser?.name || "System",
+      action: "ثبت نوبت جدید",
+      entityType: "APPOINTMENT",
+      entityId: newAppointment.id,
+      details: `نوبت جدید "${appointment.purpose}" برای دپارتمان ${appointment.departmentName} ثبت شد`,
+      createdAt: new Date().toISOString()
+    };
+    return {
+      appointments: [newAppointment, ...state.appointments],
+      activityLogs: [log, ...state.activityLogs]
+    };
+  }),
+  updateAppointment: (id, updates) => set((state) => {
+    const appointment = state.appointments.find(a => a.id === id);
+    const log: ActivityLog = {
+      id: `l${Date.now()}-ap-upd`,
+      userName: state.currentUser?.name || "System",
+      action: "ویرایش نوبت",
+      entityType: "APPOINTMENT",
+      entityId: id,
+      details: `اطلاعات نوبت "${appointment?.purpose}" بروزرسانی شد`,
+      createdAt: new Date().toISOString()
+    };
+    return {
+      appointments: state.appointments.map(a => a.id === id ? { ...a, ...updates } : a),
+      activityLogs: [log, ...state.activityLogs]
+    };
+  }),
+  deleteAppointment: (id) => set((state) => {
+    const appointment = state.appointments.find(a => a.id === id);
+    const log: ActivityLog = {
+      id: `l${Date.now()}-ap-del`,
+      userName: state.currentUser?.name || "System",
+      action: "حذف نوبت",
+      entityType: "APPOINTMENT",
+      entityId: id,
+      details: `نوبت "${appointment?.purpose}" از لیست حذف شد`,
+      createdAt: new Date().toISOString()
+    };
+    return {
+      appointments: state.appointments.filter(a => a.id !== id),
+      activityLogs: [log, ...state.activityLogs]
+    };
+  }),
+
+  addCheque: (cheque) => set((state) => {
+    const newCheque: Cheque = {
+      ...cheque,
+      id: `chq${Date.now()}`,
+      createdAt: new Date().toISOString()
+    };
+    const log: ActivityLog = {
+      id: `l${Date.now()}-chq-add`,
+      userName: state.currentUser?.name || "System",
+      action: "ثبت چک جدید",
+      entityType: "CHEQUE",
+      entityId: newCheque.id,
+      details: `چک شماره ${cheque.chequeNumber} (${cheque.bankName}) ثبت شد`,
+      createdAt: new Date().toISOString()
+    };
+    return {
+      cheques: [newCheque, ...state.cheques],
+      activityLogs: [log, ...state.activityLogs]
+    };
+  }),
+
+  updateCheque: (id, updates) => set((state) => {
+    const cheque = state.cheques.find(c => c.id === id);
+    const log: ActivityLog = {
+      id: `l${Date.now()}-chq-upd`,
+      userName: state.currentUser?.name || "System",
+      action: "ویرایش اطلاعات چک",
+      entityType: "CHEQUE",
+      entityId: id,
+      details: `اطلاعات چک ${cheque?.chequeNumber} بروزرسانی شد`,
+      createdAt: new Date().toISOString()
+    };
+    return {
+      cheques: state.cheques.map(c => c.id === id ? { ...c, ...updates } : c),
+      activityLogs: [log, ...state.activityLogs]
+    };
+  }),
+
+  deleteCheque: (id) => set((state) => {
+    const cheque = state.cheques.find(c => c.id === id);
+    const log: ActivityLog = {
+      id: `l${Date.now()}-chq-del`,
+      userName: state.currentUser?.name || "System",
+      action: "حذف چک",
+      entityType: "CHEQUE",
+      entityId: id,
+      details: `چک شماره ${cheque?.chequeNumber} از سامانه حذف شد`,
+      createdAt: new Date().toISOString()
+    };
+    return {
+      cheques: state.cheques.filter(c => c.id !== id),
+      activityLogs: [log, ...state.activityLogs]
+    };
+  }),
+  
+  archiveShipment: (id) => set((state) => {
+    const shipment = state.shipments.find(s => s.id === id);
+    const log: ActivityLog = {
+      id: `l${Date.now()}-ship-arc`,
+      userName: state.currentUser?.name || "System",
+      action: "بایگانی محموله",
+      entityType: "SHIPMENT",
+      entityId: id,
+      details: `محموله ${shipment?.trackingNumber} به بایگانی منتقل شد`,
+      createdAt: new Date().toISOString()
+    };
+    return {
+      shipments: state.shipments.map(s => s.id === id ? { ...s, isArchived: true } : s),
+      activityLogs: [log, ...state.activityLogs]
+    };
+  }),
+
+  archiveCheque: (id) => set((state) => {
+    const cheque = state.cheques.find(c => c.id === id);
+    const log: ActivityLog = {
+      id: `l${Date.now()}-chq-arc`,
+      userName: state.currentUser?.name || "System",
+      action: "بایگانی چک",
+      entityType: "CHEQUE",
+      entityId: id,
+      details: `چک شماره ${cheque?.chequeNumber} به بایگانی منتقل شد`,
+      createdAt: new Date().toISOString()
+    };
+    return {
+      cheques: state.cheques.map(c => c.id === id ? { ...c, status: "ARCHIVED" } : c),
+      activityLogs: [log, ...state.activityLogs]
+    };
+  }),
+
+  archiveDocument: (id) => set((state) => {
+    const doc = state.documents.find(d => d.id === id);
+    const log: ActivityLog = {
+      id: `l${Date.now()}-doc-arc`,
+      userName: state.currentUser?.name || "System",
+      action: "بایگانی سند",
+      entityType: "DOCUMENT",
+      entityId: id,
+      details: `سند ${doc?.name} به بایگانی منتقل شد`,
+      createdAt: new Date().toISOString()
+    };
+    return {
+      documents: state.documents.map(d => d.id === id ? { ...d, isArchived: true } : d),
+      activityLogs: [log, ...state.activityLogs]
+    };
+  }),
+
+  unarchiveShipment: (id) => set((state) => {
+    const shipment = state.shipments.find(s => s.id === id);
+    const log: ActivityLog = {
+      id: `l${Date.now()}-ship-unarc`,
+      userName: state.currentUser?.name || "System",
+      action: "بازگردانی محموله",
+      entityType: "SHIPMENT",
+      entityId: id,
+      details: `محموله ${shipment?.trackingNumber} از بایگانی خارج شد`,
+      createdAt: new Date().toISOString()
+    };
+    return {
+      shipments: state.shipments.map(s => s.id === id ? { ...s, isArchived: false } : s),
+      activityLogs: [log, ...state.activityLogs]
+    };
+  }),
+
+  unarchiveCheque: (id, originalStatus) => set((state) => {
+    const cheque = state.cheques.find(c => c.id === id);
+    const log: ActivityLog = {
+      id: `l${Date.now()}-chq-unarc`,
+      userName: state.currentUser?.name || "System",
+      action: "بازگردانی چک",
+      entityType: "CHEQUE",
+      entityId: id,
+      details: `چک شماره ${cheque?.chequeNumber} از بایگانی خارج شد`,
+      createdAt: new Date().toISOString()
+    };
+    return {
+      cheques: state.cheques.map(c => c.id === id ? { ...c, status: originalStatus || "PENDING" } : c),
+      activityLogs: [log, ...state.activityLogs]
+    };
+  }),
+
+  unarchiveDocument: (id) => set((state) => {
+    const doc = state.documents.find(d => d.id === id);
+    const log: ActivityLog = {
+      id: `l${Date.now()}-doc-unarc`,
+      userName: state.currentUser?.name || "System",
+      action: "بازگردانی سند",
+      entityType: "DOCUMENT",
+      entityId: id,
+      details: `سند ${doc?.name} از بایگانی خارج شد`,
+      createdAt: new Date().toISOString()
+    };
+    return {
+      documents: state.documents.map(d => d.id === id ? { ...d, isArchived: false } : d),
+      activityLogs: [log, ...state.activityLogs]
+    };
+  }),
+
+  permanentDeleteShipment: (id) => set((state) => ({
+    shipments: state.shipments.filter(s => s.id !== id),
+    shipmentSteps: state.shipmentSteps.filter(step => step.shipmentId !== id),
+    documents: state.documents.filter(doc => doc.shipmentId !== id)
+  })),
+
+  permanentDeleteCheque: (id) => set((state) => ({
+    cheques: state.cheques.filter(c => c.id !== id)
+  })),
+
+  permanentDeleteDocument: (id) => set((state) => ({
+    documents: state.documents.filter(d => d.id !== id)
   })),
 }));

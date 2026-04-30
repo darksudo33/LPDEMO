@@ -25,6 +25,9 @@ import ShipmentDetail from "./app/ShipmentDetail";
 import Documents from "./app/Documents";
 import { ShipmentEdit } from "./app/ShipmentEdit";
 import ChangeLog from "./app/ChangeLog";
+import Compliance from "./app/Compliance";
+import ChequeManagement from "./app/ChequeManagement";
+import ArchivePage from "./app/Archive";
 
 const ProtectedLayout = ({ children }: { children: React.ReactNode }) => {
   const currentUser = useMockStore(state => state.currentUser);
@@ -64,6 +67,9 @@ export default function App() {
           <Route path="/customers/*" element={<ProtectedLayout><Customers /></ProtectedLayout>} />
           <Route path="/tasks" element={<ProtectedLayout><Tasks /></ProtectedLayout>} />
           <Route path="/documents" element={<ProtectedLayout><Documents /></ProtectedLayout>} />
+          <Route path="/compliance" element={<ProtectedLayout><Compliance /></ProtectedLayout>} />
+          <Route path="/cheques" element={<ProtectedLayout><ChequeManagement /></ProtectedLayout>} />
+          <Route path="/archive" element={<ProtectedLayout><ArchivePage /></ProtectedLayout>} />
           <Route path="/chat" element={<ProtectedLayout><Chat /></ProtectedLayout>} />
           <Route path="/track" element={<ProtectedLayout><Track /></ProtectedLayout>} />
           <Route path="/profile" element={<ProtectedLayout><Profile /></ProtectedLayout>} />

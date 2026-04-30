@@ -43,6 +43,7 @@ export interface Shipment {
   estimatedDelivery: string;
   actualDelivery?: string;
   freeTimeDays: number;
+  isArchived?: boolean;
 }
 
 export interface ShipmentStep {
@@ -114,6 +115,7 @@ export interface ShipmentDocument {
   uploadedBy: string;
   createdAt: string;
   url: string;
+  isArchived?: boolean;
 }
 
 export interface Channel {
@@ -132,4 +134,43 @@ export interface Notification {
   isRead: boolean;
   createdAt: string;
   link?: string;
+}
+
+export type AppointmentStatus = "SCHEDULED" | "COMPLETED" | "CANCELLED" | "IN_PROGRESS";
+
+export type ChequeStatus = "ACTIVE" | "CLEARED" | "RETURNED" | "ARCHIVED";
+
+export interface Cheque {
+  id: string;
+  bankName: string;
+  chequeNumber: string;
+  amount: number;
+  dueDate: string;
+  location: string;
+  receiver: string;
+  status: ChequeStatus;
+  description?: string;
+  createdAt: string;
+}
+
+export interface AppointmentDocument {
+  id: string;
+  name: string;
+  required: boolean;
+  completed: boolean;
+}
+
+export interface Appointment {
+  id: string;
+  dateTime: string;
+  departmentName: string;
+  purpose: string;
+  requiredDocuments: AppointmentDocument[];
+  assignedPersonId: string;
+  assignedPersonName: string;
+  status: AppointmentStatus;
+  outcome?: string;
+  nextActionItems?: string;
+  reminderSent: boolean;
+  createdAt: string;
 }

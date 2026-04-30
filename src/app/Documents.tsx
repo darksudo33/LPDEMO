@@ -11,12 +11,14 @@ import {
   Ship,
   ExternalLink,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  Archive
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { toast } from "sonner";
 import { 
   Dialog, 
   DialogContent, 
@@ -36,6 +38,7 @@ export default function Documents() {
   const shipments = useMockStore(state => state.shipments);
   const addDocument = useMockStore(state => state.addDocument);
   const deleteDocument = useMockStore(state => state.deleteDocument);
+  const archiveDocument = useMockStore(state => state.archiveDocument);
   const currentUser = useMockStore(state => state.currentUser);
 
   const [searchTerm, setSearchTerm] = useState("");
@@ -49,9 +52,10 @@ export default function Documents() {
 
   const filteredDocs = React.useMemo(() => {
     return documents.filter(doc => {
+      const isNotArchived = !doc.isArchived;
       const matchesSearch = doc.name.toLowerCase().includes(searchTerm.toLowerCase());
       const matchesType = typeFilter === "ALL" || doc.type === typeFilter;
-      return matchesSearch && matchesType;
+      return isNotArchived && matchesSearch && matchesType;
     });
   }, [documents, searchTerm, typeFilter]);
 
@@ -234,7 +238,10 @@ export default function Documents() {
                              <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-white">
                                 <Download className="w-4 h-4" />
                              </Button>
-                             <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-red-500" onClick={() => deleteDocument(doc.id)}>
+                             <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-white" onClick={() => { archiveDocument(doc.id); toast.success("سند با موفقیت بایگانی شد."); }}>
+                                <Archive className="w-4 h-4" />
+                             </Button>
+                             <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-red-500" onClick={() => { deleteDocument(doc.id); toast.error("سند حذف شد."); }}>
                                 <Trash2 className="w-4 h-4" />
                              </Button>
                           </div>

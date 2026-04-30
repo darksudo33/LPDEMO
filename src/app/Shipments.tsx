@@ -5,9 +5,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useMockStore } from "@/src/store/useMockStore";
 import { Progress } from "@/components/ui/progress";
-import { Search, Ship, Filter, Plus, Eye, MoreHorizontal, Calendar, MapPin, Truck, Check, ListChecks, CheckCircle2, Clock, MoreVertical, Share2, Edit, ArrowUpDown, ArrowUp, ArrowDown, Activity } from "lucide-react";
+import { Search, Ship, Filter, Plus, Eye, MoreHorizontal, Calendar, MapPin, Truck, Check, ListChecks, CheckCircle2, Clock, MoreVertical, Share2, Edit, ArrowUpDown, ArrowUp, ArrowDown, Activity, Archive } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 import {
   Tabs,
   TabsContent,
@@ -67,6 +68,7 @@ export default function Shipments() {
   const shipmentSteps = useMockStore(state => state.shipmentSteps);
   const addShipment = useMockStore(state => state.addShipment);
   const updateShipmentStatus = useMockStore(state => state.updateShipmentStatus);
+  const archiveShipment = useMockStore(state => state.archiveShipment);
   const customers = useMockStore(state => state.customers);
   const tasks = useMockStore(state => state.tasks);
   const updateTaskStatus = useMockStore(state => state.updateTaskStatus);
@@ -111,9 +113,10 @@ export default function Shipments() {
   const processedShipments = React.useMemo(() => {
     return [...shipments]
       .filter(s => {
+        const isNotArchived = !s.isArchived;
         const matchesSearch = s.trackingNumber.includes(searchTerm) || s.containerNumber.includes(searchTerm);
         const matchesStatus = statusFilter === "ALL" || s.status === statusFilter;
-        return matchesSearch && matchesStatus;
+        return isNotArchived && matchesSearch && matchesStatus;
       })
       .sort((a: any, b: any) => {
         if (!sortConfig) return 0;
@@ -343,12 +346,21 @@ export default function Shipments() {
                            onClick={() => {
                              const link = `${window.location.origin}/track?q=${shipment.trackingNumber}`;
                              navigator.clipboard.writeText(link);
-                             alert("لینک رهگیری مشتری در حافظه کپی شد:\n" + link);
+                             toast.info("لینک رهگیری مشتری کپی شد");
                            }}
                          >
                            <Share2 className="w-3.5 h-3.5" />
                            اشتراک‌گذاری با مشتری
                          </DropdownMenuItem>
+                         {(shipment.status === "DELIVERED" || shipment.status === "CLOSED") && (
+                           <DropdownMenuItem 
+                             className="text-xs cursor-pointer hover:bg-amber-500/10 text-amber-500 font-bold flex items-center gap-2 rounded-lg"
+                             onClick={() => { archiveShipment(shipment.id); toast.success("محموله به بایگانی منتقل شد."); }}
+                           >
+                             <Archive className="w-3.5 h-3.5" />
+                             بایگانی محموله
+                           </DropdownMenuItem>
+                         )}
                          <DropdownMenuSeparator className="bg-[#1e293b]" />
                          <DropdownMenuGroup>
                            <DropdownMenuLabel className="text-[10px] text-slate-500 font-black px-2 py-1">تغییر وضعیت</DropdownMenuLabel>
@@ -515,12 +527,21 @@ export default function Shipments() {
                                    onClick={() => {
                                      const link = `${window.location.origin}/track?q=${shipment.trackingNumber}`;
                                      navigator.clipboard.writeText(link);
-                                     alert("لینک رهگیری مشتری در حافظه کپی شد:\n" + link);
+                                     toast.info("لینک رهگیری مشتری کپی شد");
                                    }}
                                  >
                                    <Share2 className="w-3.5 h-3.5" />
                                    اشتراک‌گذاری با مشتری
                                  </DropdownMenuItem>
+                                 {(shipment.status === "DELIVERED" || shipment.status === "CLOSED") && (
+                                   <DropdownMenuItem 
+                                     className="text-xs cursor-pointer hover:bg-amber-500/10 text-amber-500 font-bold flex items-center gap-2 rounded-lg"
+                                     onClick={() => { archiveShipment(shipment.id); toast.success("محموله به بایگانی منتقل شد."); }}
+                                   >
+                                     <Archive className="w-3.5 h-3.5" />
+                                     بایگانی محموله
+                                   </DropdownMenuItem>
+                                 )}
                                  <DropdownMenuItem 
                                    className="text-xs cursor-pointer hover:bg-[#1e293b] flex items-center gap-2 rounded-lg"
                                    onClick={() => navigate(`/shipments/${shipment.id}`)}

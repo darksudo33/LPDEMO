@@ -314,7 +314,7 @@ export default function Chat() {
                       </div>
                     </div>
                     <span className="text-[9px] text-slate-600 mt-2 px-1 font-mono">
-                      {msg.createdAt.split(' ').slice(-1)}
+                      {msg.createdAt?.split?.(' ')?.slice(-1)}
                     </span>
                   </div>
                 );

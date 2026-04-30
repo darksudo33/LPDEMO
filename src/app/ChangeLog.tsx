@@ -204,7 +204,7 @@ export default function ChangeLog() {
                           <span className="text-sm font-black text-white">{log.userName}</span>
                           <div className="flex items-center gap-1.5 text-slate-500 font-mono text-[10px]">
                             <Clock className="w-3 h-3" />
-                            {log.createdAt.split(/[T ]/)[0]} • {log.createdAt.split(/[T ]/)[1]?.substring(0, 5)}
+                            {log.createdAt?.split?.(/[T ]/)?.[0]} • {log.createdAt?.split?.(/[T ]/)?.[1]?.substring(0, 5)}
                           </div>
                         </div>
                       </div>

@@ -1,4 +1,4 @@
-import { User, Customer, Shipment, Task, Message, ActivityLog, Demurrage, ShipmentStep, ShipmentDocument, Channel, Notification } from "../types";
+import { User, Customer, Shipment, Task, Message, ActivityLog, Demurrage, ShipmentStep, ShipmentDocument, Channel, Notification, Appointment, Cheque } from "../types";
 import { addDays, format } from "date-fns-jalali";
 
 export const mockNotifications: Notification[] = [
@@ -79,4 +79,77 @@ export const mockDocuments: ShipmentDocument[] = [
   { id: "doc3", shipmentId: "s2", name: "لیست عدل‌بندی", type: "PACKING_LIST", fileSize: "850 KB", uploadedBy: "سارا رضایی", createdAt: "1403/01/11", url: "#" },
   { id: "doc4", shipmentId: "s3", name: "گواهی مبدا", type: "OTHER", fileSize: "1.1 MB", uploadedBy: "نازنین حسینی", createdAt: "1403/01/13", url: "#" },
   { id: "doc5", name: "قرارداد کلی شرکت - ۱۴۰۳", type: "OTHER", fileSize: "5.4 MB", uploadedBy: "علیرضا احمدی", createdAt: "1403/01/01", url: "#" },
+];
+
+export const mockAppointments: Appointment[] = [
+  {
+    id: "ap1",
+    dateTime: "1403/02/15 09:00",
+    departmentName: "لجستیک و حمل و نقل",
+    purpose: "بررسی قراردادهای جدید حمل دریایی با کشتیرانی دریای خزر",
+    requiredDocuments: [
+      { id: "ad1", name: "کپی قرارداد سال گذشته", required: true, completed: true },
+      { id: "ad2", name: "لیست نرخ‌های پیشنهادی", required: true, completed: false },
+      { id: "ad3", name: "معرفی‌نامه نماینده", required: false, completed: true },
+    ],
+    assignedPersonId: "u2",
+    assignedPersonName: "سارا رضایی",
+    status: "SCHEDULED",
+    reminderSent: false,
+    createdAt: "1403/02/01"
+  },
+  {
+    id: "ap2",
+    dateTime: "1403/02/20 11:30",
+    departmentName: "گمرک و مالیات",
+    purpose: "رسیدگی به پرونده تداخل وزن محموله LS-9803",
+    requiredDocuments: [
+      { id: "ad4", name: "بارنامه اصلی", required: true, completed: true },
+      { id: "ad5", name: "فیش واریزی کارورزی", required: true, completed: true },
+    ],
+    assignedPersonId: "u3",
+    assignedPersonName: "محمد تهرانی",
+    status: "IN_PROGRESS",
+    reminderSent: false,
+    createdAt: "1403/02/02"
+  }
+];
+
+export const mockCheques: Cheque[] = [
+  {
+    id: "chq1",
+    bankName: "بانک ملت",
+    chequeNumber: "12345/6789",
+    amount: 150000000,
+    dueDate: "1403/03/15",
+    location: "شرکت هوپاد",
+    receiver: "شرکت بازرگانی آریا",
+    status: "ACTIVE",
+    description: "بابت تسویه فاکتور شماره ۹۸۰",
+    createdAt: "1403/01/10"
+  },
+  {
+    id: "chq2",
+    bankName: "بانک صادرات",
+    chequeNumber: "98765/4321",
+    amount: 75000000,
+    dueDate: "1403/02/25",
+    location: "اسپاد",
+    receiver: "سازمان بنادر",
+    status: "ACTIVE",
+    description: "ضمانت ترخیص محموله LS-9802",
+    createdAt: "1403/01/15"
+  },
+  {
+    id: "chq3",
+    bankName: "بانک ملی",
+    chequeNumber: "11122/3344",
+    amount: 320000000,
+    dueDate: "1403/01/20",
+    location: "بایگانی",
+    receiver: "کشتیرانی جمهوری اسلامی",
+    status: "CLEARED",
+    description: "تسویه قرارداد حمل زمینی",
+    createdAt: "1402/12/20"
+  }
 ];
