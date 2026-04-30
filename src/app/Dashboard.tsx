@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button";
 import { useMockStore } from "@/src/store/useMockStore";
 import { Package, TrendingUp, CheckCircle, Clock, AlertTriangle } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
-import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Cell } from "recharts";
 
 const StatusBadge = ({ status }: { status: string }) => {
   const styles: Record<string, string> = {
@@ -40,7 +39,7 @@ export default function Dashboard() {
   const tasks = useMockStore(state => state.tasks);
   const currentUser = useMockStore(state => state.currentUser);
 
-  const recentShipments = React.useMemo(() => shipments.slice(0, 6), [shipments]);
+  const recentShipments = React.useMemo(() => shipments.slice(0, 8), [shipments]);
   const recentTasks = React.useMemo(() => tasks.slice(0, 3), [tasks]);
   
   const myTasks = React.useMemo(() => {
@@ -90,20 +89,6 @@ export default function Dashboard() {
       color: "text-[#ef4444]" 
     },
   ], [shipments, tasks]);
-
-  const chartData = React.useMemo(() => {
-    const counts: Record<string, number> = {};
-    shipments.forEach(s => {
-      counts[s.status] = (counts[s.status] || 0) + 1;
-    });
-    return [
-      { name: 'حمل', value: counts['IN_TRANSIT'] || 0, color: '#38bdf8' },
-      { name: 'بندر', value: counts['ARRIVED'] || 0, color: '#10b981' },
-      { name: 'گمرک', value: counts['CUSTOMS'] || 0, color: '#f59e0b' },
-      { name: 'ترخیص', value: counts['CLEARED'] || 0, color: '#8b5cf6' },
-      { name: 'تحویل', value: counts['DELIVERED'] || 0, color: '#059669' },
-    ];
-  }, [shipments]);
 
   const criticalShipments = React.useMemo(() => {
     // For demo purposes, we'll assign some random "days remaining" to make it look active
@@ -216,38 +201,8 @@ export default function Dashboard() {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Card className="bg-[#0f172a] border-[#1e293b] rounded-xl overflow-hidden p-4 flex flex-col h-[280px]">
-              <CardTitle className="text-xs font-black text-slate-400 uppercase tracking-widest mb-6">توزیع وضعیت محموله‌ها</CardTitle>
-              <div className="flex-1 w-full">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={chartData} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
-                    <XAxis 
-                      dataKey="name" 
-                      axisLine={false} 
-                      tickLine={false} 
-                      tick={{ fill: '#64748b', fontSize: 10, fontWeight: 700 }}
-                    />
-                    <YAxis 
-                      axisLine={false} 
-                      tickLine={false} 
-                      tick={{ fill: '#64748b', fontSize: 10 }}
-                    />
-                    <Tooltip 
-                      cursor={{ fill: 'rgba(56, 189, 248, 0.05)' }}
-                      contentStyle={{ backgroundColor: '#020617', border: '1px solid #1e293b', borderRadius: '12px', fontSize: '12px' }}
-                    />
-                    <Bar dataKey="value" radius={[4, 4, 0, 0]} barSize={32}>
-                      {chartData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.color} fillOpacity={0.8} />
-                      ))}
-                    </Bar>
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-            </Card>
-
-            <Card className="bg-[#0f172a] border-[#1e293b] rounded-xl overflow-hidden flex flex-col h-[280px]">
+          <div className="space-y-4">
+            <Card className="bg-[#0f172a] border-[#1e293b] rounded-xl overflow-hidden flex flex-col min-h-[300px]">
               <CardHeader className="p-4 border-b border-[#1e293b] flex flex-row items-center justify-between space-y-0">
                 <CardTitle className="text-sm font-bold text-[#f8fafc]">بارهای اخیر</CardTitle>
                 <span className="text-[11px] text-[#38bdf8] font-bold cursor-pointer hover:underline" onClick={() => navigate('/shipments')}>مشاهده همه</span>
@@ -268,6 +223,7 @@ export default function Dashboard() {
                             <td className="px-4 py-3">
                               <StatusBadge status={shipment.status} />
                             </td>
+                            <td className="px-4 py-3 text-slate-500 font-mono text-[10px]">{shipment.estimatedDelivery}</td>
                           </tr>
                         ))}
                       </tbody>

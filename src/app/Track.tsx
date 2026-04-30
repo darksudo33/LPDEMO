@@ -188,18 +188,18 @@ export default function Track() {
                     </div>
 
                     <div className="relative py-12 px-6">
-                      {/* Background Line */}
+                      {/* Background Line - Spans between icon centers */}
                       <div className="absolute top-1/2 left-[48px] right-[48px] h-[2px] bg-slate-800 -translate-y-1/2" />
                       
                       {/* Active Progress Line */}
                       <div className="absolute top-1/2 left-[48px] right-[48px] h-[3px] -translate-y-1/2">
                         <div 
-                          className="h-full bg-gradient-to-l from-[#38bdf8] to-purple-500 transition-all duration-1000 ease-out rounded-full shadow-[0_0_10px_rgba(56,189,248,0.3)]"
+                          className="absolute right-0 h-full bg-gradient-to-l from-[#38bdf8] to-purple-500 transition-all duration-1000 ease-out rounded-full shadow-[0_0_10px_rgba(56,189,248,0.3)]"
                           style={{ width: `${progressPercent}%` }}
                         />
                       </div>
                       
-                      <div className="flex justify-between relative z-10">
+                      <div className="flex justify-between items-center relative z-10 px-0">
                         <div className="flex flex-col items-center gap-3">
                           <div className="w-12 h-12 bg-[#020617] border-2 border-[#38bdf8] rounded-2xl flex items-center justify-center shadow-[0_0_15px_rgba(56,189,248,0.4)]">
                             <Anchor className="w-6 h-6 text-[#38bdf8]" />
