@@ -1,5 +1,77 @@
-import { User, Customer, Shipment, Task, Message, ActivityLog, Demurrage, ShipmentStep, ShipmentDocument, Channel, Notification, Appointment, Cheque } from "../types";
+import { User, Customer, Shipment, Task, Message, ActivityLog, Demurrage, ShipmentStep, ShipmentDocument, Channel, Notification, Appointment, Cheque, Quote } from "../types";
 import { addDays, format } from "date-fns-jalali";
+
+export const mockQuotes: Quote[] = [
+  {
+    id: "q1",
+    customerName: "آرین سیستم",
+    customerPhone: "021-88776655",
+    originCity: "شانگهای",
+    destinationCity: "بندرعباس",
+    cargoType: "GENERAL",
+    weight: 12,
+    dimensions: "12x2.4x2.6",
+    pickupDate: addDays(new Date(), 2).toISOString(),
+    deliveryDate: addDays(new Date(), 30).toISOString(),
+    requirements: ["بیمه", "رهگیری لحظه‌ای"],
+    baseRate: 750000000,
+    fuelSurcharge: 120000000,
+    loadingFees: 45000000,
+    tollFees: 15000000,
+    insurancePercentage: 1.5,
+    profitMargin: 12,
+    totalPrice: 1056720000,
+    validUntil: addDays(new Date(), 7).toISOString(),
+    status: "PENDING",
+    createdAt: new Date().toISOString()
+  },
+  {
+    id: "q2",
+    customerName: "صادرات پارس",
+    customerPhone: "021-44332211",
+    originCity: "دبی",
+    destinationCity: "بوشهر",
+    cargoType: "REFRIGERATED",
+    weight: 8,
+    dimensions: "6x2.4x2.6",
+    pickupDate: addDays(new Date(), 1).toISOString(),
+    deliveryDate: addDays(new Date(), 5).toISOString(),
+    requirements: ["دمای ثابت", "تخلیه بالابر"],
+    baseRate: 450000000,
+    fuelSurcharge: 55000000,
+    loadingFees: 30000000,
+    tollFees: 8000000,
+    insurancePercentage: 2,
+    profitMargin: 15,
+    totalPrice: 635950000,
+    validUntil: addDays(new Date(), 7).toISOString(),
+    status: "ACCEPTED",
+    createdAt: addDays(new Date(), -2).toISOString()
+  },
+  {
+    id: "q3",
+    customerName: "فراز لجستیک",
+    customerPhone: "031-11223344",
+    originCity: "هامبورگ",
+    destinationCity: "بندر امام",
+    cargoType: "HAZARDOUS",
+    weight: 15,
+    dimensions: "12x2.4x2.6",
+    pickupDate: addDays(new Date(), 5).toISOString(),
+    deliveryDate: addDays(new Date(), 45).toISOString(),
+    requirements: ["کالای خطرناک", "برچسب‌گذاری"],
+    baseRate: 1200000000,
+    fuelSurcharge: 180000000,
+    loadingFees: 90000000,
+    tollFees: 25000000,
+    insurancePercentage: 3,
+    profitMargin: 10,
+    totalPrice: 1694350000,
+    validUntil: addDays(new Date(), -1).toISOString(),
+    status: "EXPIRED",
+    createdAt: addDays(new Date(), -10).toISOString()
+  }
+];
 
 export const mockNotifications: Notification[] = [
   { id: "n1", title: "تغییر وضعیت محموله", message: "محموله LS-9801 به مرحله 'در حال حمل' تغییر یافت.", type: "INFO", isRead: false, createdAt: "1403/02/01 10:00", link: "/shipments/s1" },

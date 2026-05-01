@@ -5,7 +5,7 @@
 
 import React, { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { LayoutDashboard, Ship, Users, CheckSquare, MessageSquare, MapPin, ChevronRight, ChevronLeft, LogOut, Search, Bell, FileText, History, Settings as SettingsIcon, Menu, ShieldCheck, CreditCard, Archive } from "lucide-react";
+import { LayoutDashboard, Ship, Users, CheckSquare, MessageSquare, MapPin, ChevronRight, ChevronLeft, LogOut, Search, Bell, FileText, History, Settings as SettingsIcon, Menu, ShieldCheck, CreditCard, Archive, Calculator } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useMockStore } from "@/src/store/useMockStore";
 import { Button } from "@/components/ui/button";
@@ -29,6 +29,7 @@ const sidebarItems = [
   { icon: Users, label: "مراجعات حضوری", path: "/compliance" },
   { icon: CreditCard, label: "مدیریت چک‌ها", path: "/cheques" },
   { icon: Ship, label: "محموله‌ها", path: "/shipments" },
+  { icon: Calculator, label: "مدیریت کوتاژ", path: "/quotage" },
   { icon: Users, label: "مشتریان", path: "/customers" },
   { icon: Archive, label: "بایگانی", path: "/archive" },
   { icon: ShieldCheck, label: "مدیریت کاربران", path: "/management", ceoOnly: true },

@@ -4,8 +4,34 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useMockStore } from "@/src/store/useMockStore";
-import { Package, TrendingUp, CheckCircle, Clock, AlertTriangle } from "lucide-react";
+import { Package, TrendingUp, CheckCircle, Clock, AlertTriangle, Ship, Calculator, Users, CreditCard, Archive, FileText, CheckSquare, LayoutDashboard, LucideIcon } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
+import { motion } from "motion/react";
+
+const QuickAccessButton = ({ icon: Icon, label, path }: any) => {
+  const navigate = useNavigate();
+  return (
+    <motion.div
+      whileHover={{ y: -4, scale: 1.02 }}
+      whileTap={{ scale: 0.98 }}
+      className="flex-shrink-0"
+    >
+      <Button
+        variant="ghost"
+        onClick={() => navigate(path)}
+        className={cn(
+          "flex flex-col items-center justify-center gap-2 h-20 w-24 md:h-24 md:w-32 rounded-2xl bg-[#0f172a] border border-[#1e293b] hover:bg-[#1e293b] hover:border-[#38bdf8]/30 transition-all group p-0",
+          "shadow-lg shadow-black/20"
+        )}
+      >
+        <div className="p-2 rounded-xl bg-[#38bdf8]/10 group-hover:bg-[#38bdf8]/20 transition-all">
+          <Icon className="w-5 h-5 md:w-6 md:h-6 text-[#38bdf8]" />
+        </div>
+        <span className="text-[10px] md:text-xs font-black text-slate-400 group-hover:text-white transition-colors">{label}</span>
+      </Button>
+    </motion.div>
+  );
+};
 
 const StatusBadge = ({ status }: { status: string }) => {
   const styles: Record<string, string> = {
@@ -38,6 +64,17 @@ export default function Dashboard() {
   const shipments = useMockStore(state => state.shipments);
   const tasks = useMockStore(state => state.tasks);
   const currentUser = useMockStore(state => state.currentUser);
+
+  const quickLinks = [
+    { icon: Ship, label: "محموله‌ها", path: "/shipments" },
+    { icon: Calculator, label: "مدیریت کوتاژ", path: "/quotage" },
+    { icon: CheckSquare, label: "وظایف", path: "/tasks" },
+    { icon: CreditCard, label: "چک‌ها", path: "/cheques" },
+    { icon: FileText, label: "اسناد", path: "/documents" },
+    { icon: Users, label: "مراجعات", path: "/compliance" },
+    { icon: Users, label: "مشتریان", path: "/customers" },
+    { icon: Archive, label: "بایگانی", path: "/archive" },
+  ];
 
   const recentShipments = React.useMemo(() => shipments.slice(0, 8), [shipments]);
   const recentTasks = React.useMemo(() => tasks.slice(0, 3), [tasks]);
@@ -109,7 +146,44 @@ export default function Dashboard() {
   }, [shipments]);
 
   return (
-    <div className="p-3 md:p-5 space-y-4 font-sans">
+    <div className="p-3 md:p-5 space-y-7 font-sans rtl">
+      {/* Welcome Header */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 px-1">
+        <div>
+          <h1 className="text-xl md:text-2xl font-black text-white">
+            خوش آمدید، {currentUser?.name || "مدیر"} عزیز 👋
+          </h1>
+          <p className="text-[10px] md:text-xs font-bold text-slate-500 mt-1 uppercase tracking-tight">
+            آخرین وضعیت عملیاتی و لجستیکی امروز را بررسی کنید
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          <Badge className="bg-[#1e293b] text-slate-300 border-none px-3 py-1 text-[10px] font-black uppercase">
+            {new Date().toLocaleDateString('fa-IR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+          </Badge>
+        </div>
+      </div>
+
+      {/* Quick Access Area */}
+      <div className="space-y-3">
+        <div className="flex items-center justify-between px-1">
+          <h2 className="text-sm font-black text-white flex items-center gap-2">
+            <LayoutDashboard className="w-4 h-4 text-[#38bdf8]" />
+            دسترسی سریع
+          </h2>
+        </div>
+        <div className="flex items-center gap-3 overflow-x-auto pb-4 scrollbar-hide -mx-1 px-1">
+          {quickLinks.map((link, i) => (
+            <QuickAccessButton 
+              key={i} 
+              icon={link.icon} 
+              label={link.label} 
+              path={link.path} 
+            />
+          ))}
+        </div>
+      </div>
+
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
         {stats.map((stat, i) => (
           <Card key={i} className="bg-[#0f172a] border-[#1e293b] rounded-xl shadow-none overflow-hidden group">

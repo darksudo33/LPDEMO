@@ -1,6 +1,6 @@
 import { create } from "zustand";
-import { User, Customer, Shipment, Task, Message, ActivityLog, Demurrage, ShipmentStep, ShipmentStatus, TaskStatus, ShipmentDocument, Channel, Notification, Appointment, AppointmentStatus, Cheque } from "../types";
-import { mockUsers, mockCustomers, mockShipments, mockTasks, mockMessages, mockActivityLogs, mockDemurrage, defaultSteps, mockDocuments, mockChannels, mockNotifications, mockAppointments, mockCheques } from "../lib/mockData";
+import { User, Customer, Shipment, Task, Message, ActivityLog, Demurrage, ShipmentStep, ShipmentStatus, TaskStatus, ShipmentDocument, Channel, Notification, Appointment, AppointmentStatus, Cheque, Quote } from "../types";
+import { mockUsers, mockCustomers, mockShipments, mockTasks, mockMessages, mockActivityLogs, mockDemurrage, defaultSteps, mockDocuments, mockChannels, mockNotifications, mockAppointments, mockCheques, mockQuotes } from "../lib/mockData";
 
 interface MockStore {
   currentUser: User | null;
@@ -52,6 +52,10 @@ interface MockStore {
   permanentDeleteShipment: (id: string) => void;
   permanentDeleteCheque: (id: string) => void;
   permanentDeleteDocument: (id: string) => void;
+  quotes: Quote[];
+  addQuote: (quote: Omit<Quote, "id" | "createdAt">) => void;
+  updateQuote: (id: string, updates: Partial<Quote>) => void;
+  deleteQuote: (id: string) => void;
 }
 
 export const useMockStore = create<MockStore>((set) => ({
@@ -78,6 +82,7 @@ export const useMockStore = create<MockStore>((set) => ({
   notifications: mockNotifications,
   appointments: mockAppointments,
   cheques: mockCheques,
+  quotes: mockQuotes,
 
   setCurrentUser: (user) => set({ currentUser: user }),
 
@@ -525,4 +530,59 @@ export const useMockStore = create<MockStore>((set) => ({
   permanentDeleteDocument: (id) => set((state) => ({
     documents: state.documents.filter(d => d.id !== id)
   })),
+
+  addQuote: (quote) => set((state) => {
+    const newQuote: Quote = {
+      ...quote,
+      id: `q${Date.now()}`,
+      createdAt: new Date().toISOString()
+    };
+    const log: ActivityLog = {
+      id: `l${Date.now()}-quote-add`,
+      userName: state.currentUser?.name || "System",
+      action: "ثبت کوتاژ جدید",
+      entityType: "QUOTE",
+      entityId: newQuote.id,
+      details: `استعلام قیمت برای ${quote.customerName} (مسیر: ${quote.originCity} به ${quote.destinationCity}) ثبت شد`,
+      createdAt: new Date().toISOString()
+    };
+    return {
+      quotes: [newQuote, ...state.quotes],
+      activityLogs: [log, ...state.activityLogs]
+    };
+  }),
+
+  updateQuote: (id, updates) => set((state) => {
+    const quote = state.quotes.find(q => q.id === id);
+    const log: ActivityLog = {
+      id: `l${Date.now()}-quote-upd`,
+      userName: state.currentUser?.name || "System",
+      action: "ویرایش کوتاژ",
+      entityType: "QUOTE",
+      entityId: id,
+      details: `اطلاعات استعلام قیمت ${quote?.id} بروزرسانی شد`,
+      createdAt: new Date().toISOString()
+    };
+    return {
+      quotes: state.quotes.map(q => q.id === id ? { ...q, ...updates } : q),
+      activityLogs: [log, ...state.activityLogs]
+    };
+  }),
+
+  deleteQuote: (id) => set((state) => {
+    const quote = state.quotes.find(q => q.id === id);
+    const log: ActivityLog = {
+      id: `l${Date.now()}-quote-del`,
+      userName: state.currentUser?.name || "System",
+      action: "حذف کوتاژ",
+      entityType: "QUOTE",
+      entityId: id,
+      details: `استعلام قیمت شماره ${quote?.id} از سیستم حذف شد`,
+      createdAt: new Date().toISOString()
+    };
+    return {
+      quotes: state.quotes.filter(q => q.id !== id),
+      activityLogs: [log, ...state.activityLogs]
+    };
+  }),
 }));

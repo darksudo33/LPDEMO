@@ -5,17 +5,17 @@
 
 import React from "react";
 import { Link, useLocation } from "react-router-dom";
-import { LayoutDashboard, Ship, CheckSquare, MessageSquare, MapPin, ShieldCheck, CreditCard, Archive } from "lucide-react";
+import { LayoutDashboard, Ship, CheckSquare, MessageSquare, MapPin, ShieldCheck, CreditCard, Archive, Calculator } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { motion } from "motion/react";
 
 const navItems = [
   { icon: LayoutDashboard, label: "داشبورد", path: "/dashboard" },
-  { icon: Ship, label: "محموله‌ها", path: "/shipments" },
+  { icon: Ship, label: "بارها", path: "/shipments" },
+  { icon: Calculator, label: "مدیریت کوتاژ", path: "/quotage" },
   { icon: CheckSquare, label: "وظایف", path: "/tasks" },
   { icon: CreditCard, label: "چک‌ها", path: "/cheques" },
   { icon: Archive, label: "آرشیو", path: "/archive" },
-  { icon: MessageSquare, label: "چت", path: "/chat" },
 ];
 
 export const MobileBottomNav = () => {

@@ -19,7 +19,7 @@ import {
   DollarSign,
   Briefcase
 } from "lucide-react";
-import { format, differenceInSeconds, parse } from "date-fns-jalali";
+import { format } from "date-fns-jalali";
 import { useMockStore } from "@/src/store/useMockStore";
 import { Cheque, ChequeStatus } from "../types";
 import { Button } from "@/components/ui/button";
@@ -29,7 +29,6 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
@@ -40,17 +39,9 @@ const ChequeTimer = ({ targetDate }: { targetDate: string }) => {
   useEffect(() => {
     const calculate = () => {
       try {
-        const now = new Date();
-        // date-fns-jalali parse might need exact format or just Date object if the string is compatible
-        // Mock data uses YYYY/MM/DD which is generally compatible with jalali parser
-        const target = new Date(); // Fallback
-        
-        // Simple manual diff for mock purposes if complex parsing fails
         const [year, month, day] = targetDate.split("/").map(Number);
-        // This is a rough estimation for the timer UI
         const targetTime = new Date(year + 621, month - 1, day).getTime(); 
         const nowTime = new Date().getTime();
-        
         setTimeLeft(Math.max(0, Math.floor((targetTime - nowTime) / 1000)));
       } catch (e) {
         setTimeLeft(0);
@@ -100,7 +91,7 @@ export default function ChequeManagement() {
       c.receiver.toLowerCase().includes(searchTerm.toLowerCase()) ||
       c.location.toLowerCase().includes(searchTerm.toLowerCase());
     
-    const matchesFilter = filterStatus === "ALL" || c.status === filterStatus;
+    const matchesFilter = filterStatus === "ALL" || (filterStatus !== "ALL" && c.status === filterStatus);
     
     return matchesSearch && matchesFilter;
   });
@@ -158,7 +149,7 @@ export default function ChequeManagement() {
   };
 
   return (
-    <div className="p-4 md:p-8 space-y-8 bg-[#020617] min-h-screen text-slate-100 font-sans" dir="rtl">
+    <div className="p-4 md:p-8 space-y-8 bg-[#020617] min-h-screen text-slate-100 font-sans pb-20" dir="rtl">
       {/* Header Section */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div>
@@ -188,7 +179,7 @@ export default function ChequeManagement() {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {[
           { label: "مجموع چک‌های فعال", val: cheques.filter(c => c.status === "ACTIVE").length, icon: CreditCard, color: "text-[#38bdf8]" },
-          { label: "سررسید ماه جاری", val: cheques.filter(c => c.dueDate.includes("1403/02")).length, icon: CalendarIcon, color: "text-amber-500" },
+          { label: "سررسید ماه جاری", val: cheques.filter(c => c.dueDate.includes("/02/")).length, icon: CalendarIcon, color: "text-amber-500" },
           { label: "مبلغ کل در گردش", val: (cheques.filter(c => c.status === "ACTIVE").reduce((acc, c) => acc + c.amount, 0) / 1000000).toLocaleString() + " م", icon: DollarSign, color: "text-emerald-500" },
           { label: "نیاز به بازپس‌گیری", val: 2, icon: AlertCircle, color: "text-rose-500" },
         ].map((stat, i) => (
@@ -238,103 +229,96 @@ export default function ChequeManagement() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="flex flex-col gap-4">
           <AnimatePresence>
             {filteredCheques.map((chq) => (
               <motion.div
                 key={chq.id}
                 layout
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.9 }}
+                initial={{ opacity: 0, scale: 0.98 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
                 transition={{ duration: 0.2 }}
               >
-                <Card className="bg-slate-900 border-slate-800/80 hover:border-[#38bdf8]/30 transition-all rounded-[2rem] overflow-hidden group shadow-lg hover:shadow-[#38bdf8]/5 h-full flex flex-col">
+                <Card className="bg-slate-900/40 border-slate-800/80 hover:border-[#38bdf8]/30 transition-all rounded-3xl overflow-hidden group shadow-lg flex items-center p-3 md:p-5 relative">
+                  {/* Status Indicator Bar */}
                   <div className={cn(
-                    "h-1.5 w-full",
-                    chq.status === "ACTIVE" ? "bg-[#38bdf8]" : 
-                    chq.status === "CLEARED" ? "bg-emerald-500" : 
-                    chq.status === "RETURNED" ? "bg-rose-500" : "bg-slate-700"
+                    "absolute right-0 top-0 bottom-0 w-1.5",
+                    chq.status === "ACTIVE" ? "bg-[#38bdf8]/40" : 
+                    chq.status === "CLEARED" ? "bg-emerald-500/40" : 
+                    chq.status === "RETURNED" ? "bg-rose-500/40" : "bg-slate-700/40"
                   )} />
                   
-                  <CardHeader className="p-6 pb-2">
-                    <div className="flex items-start justify-between">
-                      <div className="flex gap-4">
-                        <div className="w-12 h-12 bg-slate-800 rounded-xl flex items-center justify-center text-[#38bdf8] border border-slate-700 group-hover:scale-105 transition-transform">
-                          <Briefcase className="w-6 h-6" />
-                        </div>
-                        <div>
-                          <h3 className="font-black text-slate-100 group-hover:text-[#38bdf8] transition-colors">{chq.bankName}</h3>
-                          <p className="text-[10px] text-slate-500 font-bold mt-0.5 tracking-wider">ساعت {chq.chequeNumber}</p>
-                        </div>
+                  <div className="flex flex-col md:flex-row items-center gap-4 md:gap-8 flex-1 w-full text-right">
+                    {/* Icon Container */}
+                    <div className="w-12 h-12 bg-slate-800 rounded-2xl flex items-center justify-center text-[#38bdf8] border border-slate-700 shrink-0 shadow-inner group-hover:scale-105 transition-transform">
+                      <Briefcase className="w-6 h-6" />
+                    </div>
+
+                    {/* Bank and Number */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-3 mb-1">
+                        <h3 className="text-lg font-black text-slate-100 group-hover:text-[#38bdf8] transition-colors truncate">
+                          {chq.bankName}
+                        </h3>
+                        <Badge className={cn(
+                          "hidden sm:inline-flex text-[9px] font-black px-2 py-0.5 rounded-lg border",
+                          chq.status === "ACTIVE" && "bg-blue-500/10 text-blue-400 border-blue-500/20",
+                          chq.status === "CLEARED" && "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
+                          chq.status === "RETURNED" && "bg-rose-500/10 text-rose-400 border-rose-500/20"
+                        )}>
+                          {chq.status === "ACTIVE" ? "در جریان" : chq.status === "CLEARED" ? "پاس شده" : "برگشتی"}
+                        </Badge>
                       </div>
-                      <Badge className={cn(
-                        "text-[8px] font-black px-2 py-0.5 rounded-lg",
-                        chq.status === "ACTIVE" && "bg-blue-500/10 text-blue-400 border border-blue-500/20",
-                        chq.status === "CLEARED" && "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20",
-                        chq.status === "RETURNED" && "bg-rose-500/10 text-rose-400 border border-rose-500/20"
-                      )}>
-                        {chq.status === "ACTIVE" ? "در جریان" : chq.status === "CLEARED" ? "پاس شده" : "برگشتی"}
-                      </Badge>
+                      <p className="text-xs text-slate-500 font-bold truncate tracking-wider">شماره چک: {chq.chequeNumber}</p>
                     </div>
-                  </CardHeader>
 
-                  <CardContent className="p-6 flex-1 space-y-4">
-                    <div className="flex flex-col gap-2">
-                       <div className="flex items-center justify-between">
-                          <span className="text-[10px] font-black text-slate-600 uppercase tracking-widest">مبلغ چک</span>
-                          <span className="text-sm font-black text-[#38bdf8]">{chq.amount.toLocaleString()} ریال</span>
+                    {/* Stats/Details Desktop Only */}
+                    <div className="hidden lg:flex flex-row items-center gap-10 text-slate-400 font-bold shrink-0">
+                       <div className="flex flex-col items-center gap-1">
+                         <span className="text-[9px] text-slate-600 uppercase tracking-widest">گیرنده</span>
+                         <span className="text-xs">{chq.receiver}</span>
                        </div>
-                       <div className="h-0.5 w-full bg-slate-800/50 rounded-full overflow-hidden">
-                          <div className="bg-[#38bdf8] h-full" style={{ width: '40%' }} />
+                       <div className="flex flex-col items-center gap-1">
+                         <span className="text-[9px] text-slate-600 uppercase tracking-widest">مبلغ نهایی</span>
+                         <span className="text-xs text-[#38bdf8]">{chq.amount.toLocaleString()} ریال</span>
+                       </div>
+                       <div className="flex flex-col items-center gap-1">
+                         <span className="text-[9px] text-slate-600 uppercase tracking-widest">محل نگهداری</span>
+                         <span className="text-xs">{chq.location}</span>
                        </div>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4 pt-2">
-                       <div className="space-y-1">
-                          <label className="text-[9px] font-black text-slate-600 uppercase tracking-widest flex items-center gap-1">
-                             <MapPin className="w-2.5 h-2.5" />
-                             محل نگهداری
-                          </label>
-                          <p className="text-xs font-bold text-slate-300">{chq.location}</p>
-                       </div>
-                       <div className="space-y-1">
-                          <label className="text-[9px] font-black text-slate-600 uppercase tracking-widest flex items-center gap-1">
-                             <User className="w-2.5 h-2.5" />
-                             در وجه / گیرنده
-                          </label>
-                          <p className="text-xs font-bold text-slate-300">{chq.receiver}</p>
-                       </div>
+                    {/* Timer and Due Date */}
+                    <div className="flex flex-col items-center md:items-end gap-2 shrink-0 border-t md:border-t-0 md:border-r border-slate-800/50 pt-4 md:pt-0 md:pr-4 w-full md:w-auto">
+                        <div className="flex items-center gap-2">
+                           <CalendarIcon className="w-3.5 h-3.5 text-slate-500" />
+                           <span className="text-xs font-mono font-bold text-slate-400">{chq.dueDate}</span>
+                        </div>
+                        <ChequeTimer targetDate={chq.dueDate} />
                     </div>
 
-                    <div className="pt-4 border-t border-slate-800/50 flex items-center justify-between">
-                       <div className="flex items-center gap-2">
-                          <CalendarIcon className="w-3.5 h-3.5 text-slate-500" />
-                          <span className="text-xs font-mono font-bold text-slate-400">{chq.dueDate}</span>
-                       </div>
-                       <ChequeTimer targetDate={chq.dueDate} />
-                    </div>
-                  </CardContent>
-
-                  <CardFooter className="p-4 bg-slate-800/20 border-t border-slate-800/40 flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-all transform translate-y-2 group-hover:translate-y-0">
-                    {(chq.status === "CLEARED" || chq.status === "RETURNED") && (
-                      <Button 
-                        variant="ghost" 
-                        size="icon" 
-                        className="h-9 w-9 rounded-xl hover:bg-amber-500/10 hover:text-amber-500" 
-                        onClick={() => { archiveCheque(chq.id); toast.success("چک به بایگانی منتقل شد."); }}
-                        title="انتقال به بایگانی"
-                      >
-                        <Archive className="w-4 h-4" />
+                    {/* Actions */}
+                    <div className="flex items-center gap-2 justify-center md:justify-end shrink-0">
+                      {(chq.status === "CLEARED" || chq.status === "RETURNED") && (
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="h-10 w-10 rounded-2xl hover:bg-amber-500/10 hover:text-amber-500" 
+                          onClick={() => { archiveCheque(chq.id); toast.success("چک به بایگانی منتقل شد."); }}
+                          title="انتقال به بایگانی"
+                        >
+                          <Archive className="w-5 h-5" />
+                        </Button>
+                      )}
+                      <Button variant="ghost" size="icon" className="h-10 w-10 rounded-2xl hover:bg-[#38bdf8]/10 hover:text-[#38bdf8]" onClick={() => handleOpenEdit(chq)}>
+                         <Edit3 className="w-5 h-5" />
                       </Button>
-                    )}
-                    <Button variant="ghost" size="icon" className="h-9 w-9 rounded-xl hover:bg-[#38bdf8]/10 hover:text-[#38bdf8]" onClick={() => handleOpenEdit(chq)}>
-                       <Edit3 className="w-4 h-4" />
-                    </Button>
-                    <Button variant="ghost" size="icon" className="h-9 w-9 rounded-xl hover:bg-rose-500/10 hover:text-rose-500" onClick={() => { deleteCheque(chq.id); toast.error("چک با موفقیت حذف شد."); }}>
-                       <Trash2 className="w-4 h-4" />
-                    </Button>
-                  </CardFooter>
+                      <Button variant="ghost" size="icon" className="h-10 w-10 rounded-2xl hover:bg-rose-500/10 hover:text-rose-500" onClick={() => { deleteCheque(chq.id); toast.error("چک با موفقیت حذف شد."); }}>
+                         <Trash2 className="w-5 h-5" />
+                      </Button>
+                    </div>
+                  </div>
                 </Card>
               </motion.div>
             ))}

@@ -140,6 +140,35 @@ export type AppointmentStatus = "SCHEDULED" | "COMPLETED" | "CANCELLED" | "IN_PR
 
 export type ChequeStatus = "ACTIVE" | "CLEARED" | "RETURNED" | "ARCHIVED";
 
+export type QuoteStatus = "PENDING" | "ACCEPTED" | "REJECTED" | "EXPIRED";
+
+export type CargoType = "GENERAL" | "REFRIGERATED" | "HAZARDOUS" | "OVERSIZED";
+
+export interface Quote {
+  id: string;
+  customerName: string;
+  customerPhone: string;
+  originCity: string;
+  destinationCity: string;
+  cargoType: CargoType;
+  weight: number; // in tons
+  dimensions: string; // LexWxh
+  pickupDate: string;
+  deliveryDate: string;
+  requirements: string[]; // insurance, express, etc.
+  baseRate: number;
+  fuelSurcharge: number;
+  loadingFees: number;
+  tollFees: number;
+  insurancePercentage: number;
+  profitMargin: number;
+  totalPrice: number;
+  validUntil: string;
+  status: QuoteStatus;
+  notes?: string;
+  createdAt: string;
+}
+
 export interface Cheque {
   id: string;
   bankName: string;
