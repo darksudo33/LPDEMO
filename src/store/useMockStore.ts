@@ -35,6 +35,7 @@ interface MockStore {
   deleteDocument: (id: string) => void;
   markNotificationRead: (id: string) => void;
   markAllNotificationsRead: () => void;
+  addNotification: (notification: Omit<Notification, "id" | "isRead" | "createdAt" | "link"> & { link?: string }) => void;
   updateCurrentUser: (updates: Partial<User>) => void;
   addAppointment: (appointment: Omit<Appointment, "id" | "createdAt" | "reminderSent">) => void;
   updateAppointment: (id: string, updates: Partial<Appointment>) => void;
@@ -253,6 +254,18 @@ export const useMockStore = create<MockStore>((set) => ({
   })),
   markAllNotificationsRead: () => set((state) => ({
     notifications: state.notifications.map(n => ({ ...n, isRead: true }))
+  })),
+  addNotification: (notification) => set((state) => ({
+    notifications: [
+      {
+        ...notification,
+        id: `n${Date.now()}`,
+        isRead: false,
+        createdAt: new Date().toISOString(),
+        link: notification.link || "/dashboard"
+      },
+      ...state.notifications
+    ]
   })),
   addUser: (user) => set((state) => {
     const freshUser = { ...user, id: `u${Date.now()}` };

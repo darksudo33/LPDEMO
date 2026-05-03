@@ -38,11 +38,13 @@ import {
   X,
   Check
 } from "lucide-react";
+import { format, addDays } from "date-fns-jalali";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { toast } from "sonner";
 import { 
   Dialog, 
   DialogContent, 
@@ -79,6 +81,16 @@ const DocumentView = ({ shipmentId }: { shipmentId: string }) => {
     doc.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setNewDoc(prev => ({ ...prev, name: file.name }));
+      toast.info(`فایل "${file.name}" انتخاب شد.`);
+    }
+  };
+
   const handleAddDoc = () => {
     if (!newDoc.name) return;
     addDocument({
@@ -91,6 +103,7 @@ const DocumentView = ({ shipmentId }: { shipmentId: string }) => {
     });
     setIsAddDocOpen(false);
     setNewDoc({ name: "", type: "OTHER" });
+    toast.success("سند با موفقیت بارگذاری شد.");
   };
 
   const getDocTypeInfo = (type: string) => {
@@ -145,11 +158,22 @@ const DocumentView = ({ shipmentId }: { shipmentId: string }) => {
                 <DialogDescription className="text-xs text-slate-400">فایل‌های معتبر: PDF, JPG, PNG (حداکثر ۱۰ مگابایت)</DialogDescription>
               </DialogHeader>
               <div className="space-y-4 py-4">
-                <div className="bg-[#1e293b]/50 border-2 border-dashed border-[#334155] rounded-2xl p-8 flex flex-col items-center justify-center text-center group cursor-pointer hover:border-[#38bdf8]/50 transition-colors">
+                <div 
+                  className="bg-[#1e293b]/50 border-2 border-dashed border-[#334155] rounded-2xl p-8 flex flex-col items-center justify-center text-center group cursor-pointer hover:border-[#38bdf8]/50 transition-colors"
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  <input 
+                    type="file" 
+                    ref={fileInputRef} 
+                    className="hidden" 
+                    onChange={handleFileChange}
+                  />
                   <div className="w-12 h-12 rounded-full bg-[#1e293b] flex items-center justify-center text-slate-500 mb-3 group-hover:text-[#38bdf8] transition-colors">
                     <Plus className="w-6 h-6" />
                   </div>
-                  <p className="text-xs font-bold text-slate-300">انتخاب فایل از سیستم</p>
+                  <p className="text-xs font-bold text-slate-300">
+                    {newDoc.name || "انتخاب فایل از سیستم"}
+                  </p>
                   <p className="text-[10px] text-slate-500 mt-1">یا فایل را به اینجا بکشید</p>
                 </div>
 
@@ -233,7 +257,7 @@ const DocumentView = ({ shipmentId }: { shipmentId: string }) => {
                 </div>
               </div>
               
-              <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+              <div className="absolute top-2 right-2 opacity-100 transition-opacity">
                 <Button variant="ghost" size="icon" className="h-6 w-6 text-slate-600 hover:text-[#38bdf8]">
                   <ExternalLink className="w-3 h-3" />
                 </Button>
@@ -316,7 +340,8 @@ export default function ShipmentDetail() {
   const [assignForm, setAssignForm] = useState({
     userId: users[0]?.id || "",
     priority: "MEDIUM" as const,
-    dueDate: "۱۴۰۳/۰۵/۰۱",
+    dueDate: format(addDays(new Date(), 7), "yyyy/MM/dd"),
+    deadline: "12:00",
     description: ""
   });
 
@@ -335,7 +360,21 @@ export default function ShipmentDetail() {
   const completedSteps = steps.filter(s => s.status === "COMPLETED").length;
   const progressPercent = Math.round((completedSteps / steps.length) * 100);
 
-  const EMPLOYEE_MANAGED_STEPS = ["ثبت اولیه", "رزرو کانتینر", "بارگیری در مبدا", "ورود به محوطه گمرکی", "ترخیص کالا", "بارگیری برای حمل داخلی", "تحویل نهایی"];
+  const EMPLOYEE_MANAGED_STEPS = [
+    "ثبت سفارش در سامانه جامع تجارت",
+    "دریافت مجوزهای لازم از سازمانهای مربوطه",
+    "عقد قرارداد حمل‌ونقل بین‌المللی",
+    "رزرو وسیله حمل",
+    "بارگیری کالا در مبدأ",
+    "ارسال اسناد حمل به واردکننده",
+    "اظهار کالا در سامانه گمرکی",
+    "ارائه و بررسی اسناد توسط کارشناس گمرک",
+    "ارزیابی و بازرسی فیزیکی کالا (در صورت نیاز)",
+    "پرداخت حقوق و عوارض گمرکی",
+    "دریافت پروانه سبز گمرکی",
+    "هماهنگی و انجام حمل داخلی",
+    "خروج کالا از گمرک و تحویل در مقصد"
+  ];
 
   const handleAssignTask = () => {
     const user = users.find(u => u.id === assignForm.userId);
@@ -348,6 +387,7 @@ export default function ShipmentDetail() {
       status: "TODO",
       priority: assignForm.priority,
       dueDate: assignForm.dueDate,
+      deadline: assignForm.deadline,
       shipmentId: shipment.id
     });
     
@@ -360,7 +400,8 @@ export default function ShipmentDetail() {
     setAssignForm({
       userId: users[0]?.id || "",
       priority: "MEDIUM",
-      dueDate: "۱۴۰۳/۰۵/۰۱",
+      dueDate: format(addDays(new Date(), 7), "yyyy/MM/dd"),
+      deadline: "12:00",
       description: ""
     });
   };
@@ -840,18 +881,17 @@ export default function ShipmentDetail() {
           </DialogHeader>
           
           <div className="grid gap-4 py-4">
-            <div className="space-y-2">
-              <Label className="text-xs text-slate-400">کارمند مسئول</Label>
-              <select 
-                className="w-full bg-[#1e293b] border-[#334155] rounded-xl h-10 text-xs px-3 outline-none focus:ring-1 focus:ring-[#38bdf8]"
-                value={assignForm.userId}
-                onChange={e => setAssignForm({...assignForm, userId: e.target.value})}
-              >
-                {users.map(u => <option key={u.id} value={u.id}>{u.name} ({u.role})</option>)}
-              </select>
-            </div>
-
             <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label className="text-xs text-slate-400">کارمند مسئول</Label>
+                <select 
+                  className="w-full bg-[#1e293b] border-[#334155] rounded-xl h-10 text-xs px-3 outline-none focus:ring-1 focus:ring-[#38bdf8]"
+                  value={assignForm.userId}
+                  onChange={e => setAssignForm({...assignForm, userId: e.target.value})}
+                >
+                  {users.map(u => <option key={u.id} value={u.id}>{u.name} ({u.role})</option>)}
+                </select>
+              </div>
               <div className="space-y-2">
                 <Label className="text-xs text-slate-400">اولویت</Label>
                 <select 
@@ -865,6 +905,9 @@ export default function ShipmentDetail() {
                   <option value="URGENT">فوری</option>
                 </select>
               </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label className="text-xs text-slate-400">تاریخ سررسید</Label>
                 <input 
@@ -873,6 +916,16 @@ export default function ShipmentDetail() {
                   className="w-full bg-[#1e293b] border-[#334155] rounded-xl h-10 text-xs px-3 outline-none focus:ring-1 focus:ring-[#38bdf8]"
                   value={assignForm.dueDate}
                   onChange={e => setAssignForm({...assignForm, dueDate: e.target.value})}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-xs text-slate-400">ساعت ددلاین</Label>
+                <input 
+                  type="text"
+                  placeholder="۱۲:۰۰"
+                  className="w-full bg-[#1e293b] border-[#334155] rounded-xl h-10 text-xs px-3 outline-none focus:ring-1 focus:ring-[#38bdf8]"
+                  value={assignForm.deadline}
+                  onChange={e => setAssignForm({...assignForm, deadline: e.target.value})}
                 />
               </div>
             </div>

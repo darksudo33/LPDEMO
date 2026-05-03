@@ -49,6 +49,14 @@ export default function Documents() {
     type: "OTHER" as DocumentType,
     shipmentId: ""
   });
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setNewDoc(prev => ({ ...prev, name: file.name }));
+    }
+  };
 
   const filteredDocs = React.useMemo(() => {
     return documents.filter(doc => {
@@ -106,13 +114,35 @@ export default function Documents() {
               <DialogTitle>آپلود سند جدید</DialogTitle>
             </DialogHeader>
             <div className="space-y-4 py-4">
-              <div className="space-y-2">
-                <Label className="text-xs text-slate-400">نام فایل</Label>
-                <Input 
-                  className="bg-[#1e293b] border-[#334155]" 
-                  value={newDoc.name}
-                  onChange={e => setNewDoc({...newDoc, name: e.target.value})}
+              <div className="space-y-4">
+                <input 
+                  type="file" 
+                  className="hidden" 
+                  ref={fileInputRef} 
+                  onChange={handleFileChange}
                 />
+                <div 
+                  className="border-2 border-dashed border-slate-800 rounded-2xl p-8 flex flex-col items-center justify-center gap-3 cursor-pointer hover:border-[#38bdf8]/50 hover:bg-[#38bdf8]/5 transition-all group"
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  <div className="w-12 h-12 rounded-full bg-[#1e293b] flex items-center justify-center text-[#38bdf8] group-hover:scale-110 transition-transform">
+                    <Plus className="w-6 h-6" />
+                  </div>
+                  <div className="text-center">
+                    <p className="text-xs font-bold text-slate-200">برای انتخاب فایل کلیک کنید</p>
+                    <p className="text-[10px] text-slate-500 mt-1">حداکثر حجم فایل: ۲۵ مگابایت</p>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-xs text-slate-400">نام فایل انتخابی</Label>
+                  <Input 
+                    className="bg-[#1e293b] border-[#334155]" 
+                    placeholder="انتخاب فایل..."
+                    value={newDoc.name}
+                    onChange={e => setNewDoc({...newDoc, name: e.target.value})}
+                  />
+                </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
@@ -234,7 +264,7 @@ export default function Documents() {
                        <td className="px-6 py-4 text-xs text-slate-300">{doc.uploadedBy}</td>
                        <td className="px-6 py-4 text-[11px] text-slate-500 font-mono">{doc.createdAt}</td>
                        <td className="px-6 py-4">
-                          <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <div className="flex items-center gap-1 opacity-100 transition-opacity">
                              <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-white">
                                 <Download className="w-4 h-4" />
                              </Button>

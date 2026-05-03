@@ -3,7 +3,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useMockStore } from "@/src/store/useMockStore";
-import { Search, UserPlus, Phone, Mail, Building2, Calendar, MoreVertical, ExternalLink, Share2 } from "lucide-react";
+import { Search, UserPlus, Phone, Mail, Building2, Calendar, MoreVertical, ExternalLink, Share2, Eye } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { 
   DropdownMenu, 
   DropdownMenuContent, 
@@ -23,6 +24,7 @@ import {
 import { Label } from "@/components/ui/label";
 
 export default function Customers() {
+  const navigate = useNavigate();
   const customers = useMockStore(state => state.customers);
   const [searchTerm, setSearchTerm] = useState("");
 
@@ -125,8 +127,17 @@ export default function Customers() {
                     </td>
                     <td className="px-5 py-4 text-slate-500">{customer.createdAt}</td>
                     <td className="px-5 py-4">
-                      <div className="flex items-center gap-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
-                        <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-500 hover:text-white hover:bg-[#1e293b]" onClick={() => window.open('/track', '_blank')}>
+                      <div className="flex items-center gap-1 opacity-100 transition-opacity">
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="h-8 w-8 text-[#38bdf8] hover:text-white hover:bg-[#38bdf8]/20" 
+                          onClick={() => navigate(`/customers/${customer.id}`)}
+                          title="مشاهده جزئیات کامل"
+                        >
+                          <Eye className="w-3.5 h-3.5" />
+                        </Button>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-500 hover:text-white hover:bg-[#1e293b]" onClick={() => window.open(`/track/${customer.id}`, '_blank')}>
                           <ExternalLink className="w-3.5 h-3.5" />
                         </Button>
                         <DropdownMenu>

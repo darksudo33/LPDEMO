@@ -4,8 +4,10 @@
  */
 
 import React, { useState } from "react";
+import { format } from "date-fns-jalali";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { LayoutDashboard, Ship, Users, CheckSquare, MessageSquare, MapPin, ChevronRight, ChevronLeft, LogOut, Search, Bell, FileText, History, Settings as SettingsIcon, Menu, ShieldCheck, CreditCard, Archive, Calculator } from "lucide-react";
+import { motion, AnimatePresence } from "motion/react";
+import { LayoutDashboard, Ship, Users, CheckSquare, MessageSquare, MapPin, ChevronRight, ChevronLeft, LogOut, Search, Bell, FileText, History, Settings as SettingsIcon, Menu, ShieldCheck, CreditCard, Archive, Calculator, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useMockStore } from "@/src/store/useMockStore";
 import { Button } from "@/components/ui/button";
@@ -62,23 +64,25 @@ export const Sidebar = () => {
         </Button>
       </div>
 
-      <nav className="flex-1 px-0 space-y-0 font-sans">
-        {menuItems.map((item) => (
-          <Link
-            key={item.path}
-            to={item.path}
-            className={cn(
-              "flex items-center gap-3 px-6 py-3 transition-colors text-sm",
-              location.pathname.startsWith(item.path)
-                ? "bg-[#1e293b] text-white border-r-4 border-[#38bdf8]"
-                : "text-slate-400 hover:bg-[#1e293b] hover:text-slate-100"
-            )}
-          >
-            <item.icon className="w-4 h-4 flex-shrink-0" />
-            {!collapsed && <span className="font-medium">{item.label}</span>}
-          </Link>
-        ))}
-      </nav>
+      <ScrollArea className="flex-1 px-0 font-sans">
+        <nav className="space-y-0">
+          {menuItems.map((item) => (
+            <Link
+              key={item.path}
+              to={item.path}
+              className={cn(
+                "flex items-center gap-3 px-6 py-3 transition-colors text-sm",
+                location.pathname.startsWith(item.path)
+                  ? "bg-[#1e293b] text-white border-r-4 border-[#38bdf8]"
+                  : "text-slate-400 hover:bg-[#1e293b] hover:text-slate-100"
+              )}
+            >
+              <item.icon className="w-4 h-4 flex-shrink-0" />
+              {!collapsed && <span className="font-medium">{item.label}</span>}
+            </Link>
+          ))}
+        </nav>
+      </ScrollArea>
 
       <div className="p-4 border-t border-[#1e293b] font-sans">
         {!collapsed && (
@@ -123,6 +127,9 @@ export const TopBar = () => {
     return true;
   });
 
+  const today = new Date();
+  const dateString = format(today, "EEEE، d MMMM yyyy");
+
   return (
     <header className="h-16 bg-[#0f172a] border-b border-[#1e293b] px-4 md:px-6 flex items-center justify-between sticky top-0 z-30 font-sans">
       <div className="flex items-center gap-3 md:gap-4 flex-1">
@@ -133,38 +140,78 @@ export const TopBar = () => {
               <Menu className="w-5 h-5" />
             </Button>
           } />
-          <SheetContent side="right" className="bg-[#0f172a] border-[#1e293b] p-0 w-[240px] text-right font-sans" dir="rtl">
-            <SheetHeader className="p-6 border-b border-[#1e293b]">
-              <SheetTitle className="text-lg font-bold text-[#38bdf8] text-right">⚓ لجستیک پلاس</SheetTitle>
-            </SheetHeader>
-            <nav className="p-2 space-y-1">
-              {menuItems.map((item) => (
-                <Link
-                  key={item.path}
-                  to={item.path}
-                  className={cn(
-                    "flex items-center gap-3 px-4 py-3 rounded-xl transition-all text-sm",
-                    location.pathname.startsWith(item.path)
-                      ? "bg-[#38bdf8]/10 text-[#38bdf8] font-bold"
-                      : "text-slate-400 hover:bg-[#1e293b] hover:text-slate-100"
-                  )}
-                >
-                  <item.icon className="w-4 h-4" />
-                  <span>{item.label}</span>
-                </Link>
-              ))}
-            </nav>
-            <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-[#1e293b] bg-[#020617]/50">
-               <div className="flex items-center gap-3 px-2">
-                  <Avatar className="w-9 h-9 border border-slate-700">
-                    <AvatarImage src={currentUser?.avatar} />
-                    <AvatarFallback className="bg-slate-800 text-[10px] font-bold">{currentUser?.name?.substring(0, 2)}</AvatarFallback>
-                  </Avatar>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-xs font-bold text-white truncate">{currentUser?.name}</p>
-                    <p className="text-[10px] text-slate-500 truncate">{currentUser?.role}</p>
+          <SheetContent side="right" className="bg-[#0f172a] border-[#1e293b] p-0 w-[280px] text-right font-sans overflow-hidden flex flex-col" dir="rtl">
+            <div className="absolute inset-0 bg-gradient-to-b from-[#38bdf8]/5 via-transparent to-transparent pointer-events-none" />
+            
+            <SheetHeader className="p-6 border-b border-[#1e293b] relative z-10 bg-[#0f172a]/80 backdrop-blur-md">
+              <div className="flex items-center justify-between">
+                <SheetTitle className="text-xl font-black text-white flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-lg bg-[#38bdf8] flex items-center justify-center shadow-[0_0_15px_rgba(56,189,248,0.3)]">
+                    <Ship className="w-5 h-5 text-slate-900" />
                   </div>
+                  <span>لوجی‌شارپ</span>
+                </SheetTitle>
+              </div>
+            </SheetHeader>
+
+            <ScrollArea className="flex-1 relative z-10">
+              <nav className="p-4 space-y-1.5 focus-visible:outline-none">
+                {menuItems.map((item, idx) => (
+                  <motion.div
+                    key={item.path}
+                    initial={{ opacity: 0, x: 20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: idx * 0.03 }}
+                  >
+                    <Link
+                      to={item.path}
+                      className={cn(
+                        "flex items-center gap-3 px-4 py-3.5 rounded-2xl transition-all text-sm group relative overflow-hidden",
+                        location.pathname.startsWith(item.path)
+                          ? "bg-[#38bdf8] text-slate-950 font-black shadow-[0_4px_12px_rgba(56,189,248,0.2)]"
+                          : "text-slate-400 hover:bg-[#1e293b] hover:text-slate-100"
+                      )}
+                    >
+                      <item.icon className={cn("w-4 h-4", location.pathname.startsWith(item.path) ? "text-slate-950" : "group-hover:text-[#38bdf8]")} />
+                      <span className="relative z-10">{item.label}</span>
+                      {location.pathname.startsWith(item.path) && (
+                        <motion.div 
+                          layoutId="active-pill"
+                          className="absolute inset-0 bg-white/10"
+                        />
+                      )}
+                    </Link>
+                  </motion.div>
+                ))}
+              </nav>
+            </ScrollArea>
+
+            <div className="mt-auto p-4 border-t border-[#1e293b] bg-slate-900/80 backdrop-blur-xl relative z-10">
+               <div className="bg-[#1e293b]/40 rounded-3xl p-3 border border-[#1e293b] flex items-center gap-3 group">
+                  <div className="relative">
+                    <Avatar className="w-10 h-10 border-2 border-[#38bdf8]/20 group-hover:border-[#38bdf8]/50 transition-colors">
+                      <AvatarImage src={currentUser?.avatar} />
+                      <AvatarFallback className="bg-slate-800 text-xs font-black text-[#38bdf8]">{currentUser?.name?.substring(0, 2)}</AvatarFallback>
+                    </Avatar>
+                    <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-emerald-500 border-2 border-slate-900 rounded-full" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[13px] font-black text-white truncate">{currentUser?.name}</p>
+                    <div className="flex items-center gap-1.5">
+                      <ShieldCheck className="w-3 h-3 text-[#38bdf8]" />
+                      <p className="text-[9px] font-bold text-slate-500 uppercase tracking-tighter">{currentUser?.role}</p>
+                    </div>
+                  </div>
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className="h-8 w-8 rounded-xl text-slate-500 hover:text-rose-400 hover:bg-rose-400/5 transition-all"
+                    onClick={handleLogout}
+                  >
+                    <LogOut className="w-4 h-4" />
+                  </Button>
                </div>
+               <p className="text-[10px] text-slate-600 text-center mt-3 font-medium">LogiSharp Logistics v2.4.0</p>
             </div>
           </SheetContent>
         </Sheet>
@@ -182,7 +229,7 @@ export const TopBar = () => {
       </div>
 
       <div className="flex items-center gap-2 md:gap-4">
-        <span className="text-[11px] text-slate-500 hidden xl:block">شنبه، ۷ اردیبهشت ۱۴۰۳</span>
+        <span className="text-[11px] text-slate-500 hidden xl:block">{dateString}</span>
         
         <DropdownMenu>
           <DropdownMenuTrigger

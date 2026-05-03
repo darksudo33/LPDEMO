@@ -27,7 +27,18 @@ import {
   ShieldCheck,
   Users
 } from "lucide-react";
-import { format, parse, differenceInSeconds, isSameDay } from "date-fns-jalali";
+import { 
+  format, 
+  parse, 
+  differenceInSeconds, 
+  isSameDay,
+  startOfMonth,
+  endOfMonth,
+  getDaysInMonth,
+  getDay,
+  addMonths,
+  subMonths
+} from "date-fns-jalali";
 import { useMockStore } from "@/src/store/useMockStore";
 import { Appointment, AppointmentStatus, AppointmentDocument } from "@/src/types";
 import { Button } from "@/components/ui/button";
@@ -68,19 +79,18 @@ const AppointmentTimer = ({ targetDate }: { targetDate?: string }) => {
     }
     const timer = setInterval(() => {
       try {
-        // We assume targetDate is in format "1403/02/10 09:00"
-        // For simplicity in a mock, we'll just calculate a relative time
-        // In a real app we'd convert Jalali to Gregorian first
+        const target = parse(targetDate, "yyyy/MM/dd HH:mm", new Date());
         const now = new Date();
-        // Mocking: since we are 1403/02/xx, let's just make it look like a countdown
-        const currentSeconds = now.getSeconds();
-        const mins = 59 - now.getMinutes();
-        const hours = 2 - now.getHours() % 3; // Random mock hours
+        const diff = differenceInSeconds(target, now);
         
-        if (hours < 0) {
+        if (diff <= 0) {
           setTimeLeft("برگزار شده");
+          clearInterval(timer);
         } else {
-          setTimeLeft(`${hours}:${mins < 10 ? '0' + mins : mins}:${60 - currentSeconds < 10 ? '0' + (60 - currentSeconds) : 60 - currentSeconds}`);
+          const hours = Math.floor(diff / 3600);
+          const minutes = Math.floor((diff % 3600) / 60);
+          const seconds = diff % 60;
+          setTimeLeft(`${hours}:${minutes < 10 ? '0' + minutes : minutes}:${seconds < 10 ? '0' + seconds : seconds}`);
         }
       } catch (e) {
         setTimeLeft("--:--:--");
@@ -103,6 +113,9 @@ export default function Compliance() {
   const addAppointment = useMockStore(state => state.addAppointment);
   const updateAppointment = useMockStore(state => state.updateAppointment);
   const deleteAppointment = useMockStore(state => state.deleteAppointment);
+  const addTask = useMockStore(state => state.addTask);
+  const addNotification = useMockStore(state => state.addNotification);
+  const currentUser = useMockStore(state => state.currentUser);
   const users = useMockStore(state => state.users);
   
   const [searchTerm, setSearchTerm] = useState("");
@@ -186,7 +199,29 @@ export default function Compliance() {
       toast.success("نوبت با موفقیت بروزرسانی شد.");
     } else {
       addAppointment(appData);
-      toast.success("نوبت با موفقیت ثبت شد.");
+      
+      // Auto-add Task for the assigned employee
+      addTask({
+        title: `جلسه: ${formData.purpose}`,
+        description: `مراجعه حضوری در دپارتمان ${appData.departmentName}. مستندات مورد نیاز: ${appData.requiredDocuments.map(d => d.name).join('، ')}`,
+        assignedToUserId: formData.assignedPersonId,
+        assignedToName: appData.assignedPersonName,
+        assignedByName: currentUser?.name || "سیستم",
+        status: "TODO",
+        priority: "HIGH",
+        dueDate: formData.date,
+        deadline: `${formData.hour}:${formData.minute}`
+      });
+
+      // Send Notification to alert the employee
+      addNotification({
+        title: "نوبت مراجعه جدید",
+        message: `یک نوبت مراجعه حضوری برای شما در تاریخ ${formData.date} ثبت شد: ${formData.purpose}`,
+        type: "INFO",
+        link: "/compliance"
+      });
+
+      toast.success("نوبت با موفقیت ثبت شد و وظیفه مربوطه ایجاد گردید.");
     }
 
     setIsAddOpen(false);
@@ -208,6 +243,30 @@ export default function Compliance() {
       { id: "d2", name: "فاکتور تجاری", required: true, completed: false },
       { id: "d3", name: "گواهی مبدا", required: false, completed: false },
     ]);
+  };
+
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
+  const [uploadingDocId, setUploadingDocId] = useState<{appId: string, docId: string} | null>(null);
+
+  const handleDocumentUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file && uploadingDocId) {
+      const appointment = appointments.find(a => a.id === uploadingDocId.appId);
+      if (!appointment) return;
+
+      const newDocs = appointment.requiredDocuments.map(d => 
+        d.id === uploadingDocId.docId ? { ...d, completed: true, fileName: file.name } : d
+      );
+      
+      updateAppointment(uploadingDocId.appId, { requiredDocuments: newDocs });
+      toast.success(`فایل "${file.name}" با موفقیت بارگذاری شد.`);
+      setUploadingDocId(null);
+    }
+  };
+
+  const triggerUpload = (appId: string, docId: string) => {
+    setUploadingDocId({ appId, docId });
+    fileInputRef.current?.click();
   };
 
   const toggleDocument = (appId: string, docId: string) => {
@@ -233,36 +292,55 @@ export default function Compliance() {
     { value: "CUSTOM", label: "دپارتمان سفارشی..." },
   ];
 
-  // Simple Jalali Month Grid
+  // Real Jalali Month Grid
   const renderCalendar = () => {
-    const days = ["ش", "ی", "د", "س", "چ", "پ", "ج"];
-    // In a real app we'd calculate the actual days of the month
-    // Here we'll generate a mock grid for ordinality (1-31)
+    const daysOfWeek = ["ش", "ی", "د", "س", "چ", "پ", "ج"];
+    
+    const monthStart = startOfMonth(viewDate);
+    const monthEnd = endOfMonth(viewDate);
+    const daysInMonth = getDaysInMonth(viewDate);
+    
+    // Sat=6, Sun=0, Mon=1, Tue=2, Wed=3, Thu=4, Fri=5
+    // Adjusted: Sat=0, Sun=1, ..., Fri=6
+    const startDay = (getDay(monthStart) + 1) % 7; 
+
     return (
       <div className="bg-slate-900/50 p-4 rounded-3xl border border-slate-800">
         <div className="flex items-center justify-between mb-4 px-2">
-          <Button variant="ghost" size="icon" className="h-7 w-7 text-slate-400 hover:text-white" onClick={() => setViewDate(new Date(viewDate.setMonth(viewDate.getMonth() - 1)))}>
-             <Bell className="w-4 h-4 rotate-90" />
+          <Button variant="ghost" size="icon" className="h-7 w-7 text-slate-400 hover:text-white" onClick={() => setViewDate(subMonths(viewDate, 1))}>
+             <ArrowLeft className="w-4 h-4" />
           </Button>
           <span className="text-sm font-bold text-[#38bdf8]">{format(viewDate, "MMMM yyyy")}</span>
-          <Button variant="ghost" size="icon" className="h-7 w-7 text-slate-400 hover:text-white" onClick={() => setViewDate(new Date(viewDate.setMonth(viewDate.getMonth() + 1)))}>
-             <Bell className="w-4 h-4 -rotate-90" />
+          <Button variant="ghost" size="icon" className="h-7 w-7 text-slate-400 hover:text-white" onClick={() => setViewDate(addMonths(viewDate, 1))}>
+             <ArrowLeft className="w-4 h-4 rotate-180" />
           </Button>
         </div>
         <div className="grid grid-cols-7 gap-1 text-center">
-          {days.map(d => <div key={d} className="text-[10px] font-black text-slate-600 pb-2">{d}</div>)}
-          {Array.from({ length: 31 }).map((_, i) => {
+          {daysOfWeek.map(d => <div key={d} className="text-[10px] font-black text-slate-600 pb-2">{d}</div>)}
+          
+          {/* Empty cells for start padding */}
+          {Array.from({ length: startDay }).map((_, i) => (
+            <div key={`empty-${i}`} className="h-8" />
+          ))}
+
+          {/* Actual days */}
+          {Array.from({ length: daysInMonth }).map((_, i) => {
             const day = i + 1;
-            const mockDate = `1403/02/${day < 10 ? '0' + day : day}`;
-            const hasApp = appointments.some(a => a.dateTime.includes(mockDate));
+            const currentDate = new Date(monthStart);
+            currentDate.setDate(monthStart.getDate() + i);
+            const dateStr = format(currentDate, "yyyy/MM/dd");
+            const isTodayString = format(new Date(), "yyyy/MM/dd") === dateStr;
+            const hasApp = appointments.some(a => a.dateTime.startsWith(dateStr));
+            
             return (
               <div 
-                key={i} 
+                key={day} 
                 className={cn(
                   "h-8 flex flex-col items-center justify-center rounded-lg text-xs font-bold transition-all relative cursor-pointer",
-                  day === 15 ? "bg-[#38bdf8] text-slate-950 scale-110 shadow-lg shadow-[#38bdf8]/20" : "text-slate-400 hover:bg-slate-800",
-                  hasApp && day !== 15 && "after:content-[''] after:absolute after:bottom-1 after:w-1 after:h-1 after:bg-[#38bdf8] after:rounded-full"
+                  isTodayString ? "bg-[#38bdf8] text-slate-950 scale-105 shadow-lg shadow-[#38bdf8]/20" : "text-slate-400 hover:bg-slate-800",
+                  hasApp && !isTodayString && "after:content-[''] after:absolute after:bottom-1 after:w-1 after:h-1 after:bg-[#38bdf8] after:rounded-full"
                 )}
+                onClick={() => setFormData(prev => ({ ...prev, date: dateStr }))}
               >
                 {day}
               </div>
@@ -293,63 +371,63 @@ export default function Compliance() {
               </Button>
             }
           />
-          <DialogContent className="bg-slate-900 border-slate-800 text-white max-w-2xl font-sans rounded-3xl p-8" dir="rtl">
-            <DialogHeader>
-              <DialogTitle className="text-xl font-bold flex items-center gap-4">
-                <div className="p-3 bg-[#38bdf8]/10 rounded-2xl">
-                  {editingAppointment ? <Edit3 className="w-6 h-6 text-[#38bdf8]" /> : <Calendar className="w-6 h-6 text-[#38bdf8]" />}
+          <DialogContent className="bg-slate-900 border-slate-800 text-white w-[95vw] sm:max-w-2xl font-sans rounded-2xl sm:rounded-3xl p-3 sm:p-8 overflow-y-auto max-h-[92vh] scroll-smooth" dir="rtl">
+            <DialogHeader className="sm:mb-4">
+              <DialogTitle className="text-base sm:text-xl font-black flex items-center gap-2 sm:gap-4">
+                <div className="p-2 sm:p-3 bg-[#38bdf8]/10 rounded-xl sm:rounded-2xl shrink-0">
+                  {editingAppointment ? <Edit3 className="w-4 h-4 sm:w-6 sm:h-6 text-[#38bdf8]" /> : <Calendar className="w-4 h-4 sm:w-6 sm:h-6 text-[#38bdf8]" />}
                 </div>
                 <div className="flex flex-col">
-                  <span>{editingAppointment ? "ویرایش نوبت" : "فرم رزرو نوبت"}</span>
-                  <span className="text-[10px] text-slate-500 font-bold uppercase tracking-widest leading-none mt-1">Compliance & Meeting Protocol</span>
+                  <span>{editingAppointment ? "ویرایش نوبت" : "فرم رزرو نوبت مراجعات"}</span>
+                  <span className="text-[8px] sm:text-[10px] text-slate-500 font-bold uppercase tracking-widest leading-none mt-1">Compliance & Meeting Protocol</span>
                 </div>
               </DialogTitle>
             </DialogHeader>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 py-6 text-right">
-              <div className="space-y-2">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-6 py-2 sm:py-6 text-right">
+              <div className="space-y-1.5 sm:space-y-2">
                 <Label className="text-[10px] font-black text-slate-500 uppercase tracking-widest mr-1">تاریخ (روز/ماه/سال)</Label>
-                <div className="flex gap-2 items-center">
-                   <Calendar className="w-4 h-4 text-[#38bdf8] ml-1" />
+                <div className="flex gap-2 items-center bg-slate-800/50 rounded-xl sm:rounded-2xl px-3 h-11 sm:h-12 border border-slate-700/50 focus-within:border-[#38bdf8]/50 transition-all shadow-inner">
+                   <Calendar className="w-3.5 h-3.5 text-[#38bdf8] shrink-0" />
                    <Input 
                     value={formData.date}
                     onChange={(e) => setFormData({...formData, date: e.target.value})}
-                    className="bg-slate-800/50 border-none h-12 text-center font-mono text-sm shadow-inner rounded-2xl" 
+                    className="bg-transparent border-none p-0 h-full text-center font-mono text-xs sm:text-sm shadow-none focus-visible:ring-0" 
                     placeholder="۱۴۰۳/۰۲/۱۵"
                   />
                 </div>
               </div>
 
-              <div className="space-y-2">
+              <div className="space-y-1.5 sm:space-y-2">
                 <Label className="text-[10px] font-black text-slate-500 uppercase tracking-widest mr-1">ساعت جلسه</Label>
-                <div className="flex gap-2">
+                <div className="grid grid-cols-[auto,1fr,auto,1fr] items-center gap-2">
+                   <Clock className="w-3.5 h-3.5 text-[#38bdf8]" />
+                   <Select value={formData.hour} onValueChange={(v) => setFormData({...formData, hour: v})}>
+                    <SelectTrigger className="bg-slate-800/50 border-none h-11 sm:h-12 rounded-xl sm:rounded-2xl shadow-inner font-mono text-xs sm:text-sm">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent className="bg-slate-900 border-slate-800 text-white max-h-[180px]">
+                      {Array.from({ length: 24 }).map((_, i) => (
+                        <SelectItem key={i} value={i < 10 ? `0${i}` : `${i}`}>{i < 10 ? `0${i}` : `${i}`}</SelectItem>
+                      ))}
+                    </SelectContent>
+                   </Select>
+                   <span className="flex items-center text-slate-600 font-bold">:</span>
                    <Select value={formData.minute} onValueChange={(v) => setFormData({...formData, minute: v})}>
-                    <SelectTrigger className="bg-slate-800/50 border-none h-12 rounded-2xl shadow-inner font-mono">
+                    <SelectTrigger className="bg-slate-800/50 border-none h-11 sm:h-12 rounded-xl sm:rounded-2xl shadow-inner font-mono text-xs sm:text-sm">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent className="bg-slate-900 border-slate-800 text-white">
                       {["00", "15", "30", "45"].map(m => <SelectItem key={m} value={m}>{m}</SelectItem>)}
                     </SelectContent>
                    </Select>
-                   <span className="flex items-center text-slate-600">:</span>
-                   <Select value={formData.hour} onValueChange={(v) => setFormData({...formData, hour: v})}>
-                    <SelectTrigger className="bg-slate-800/50 border-none h-12 rounded-2xl shadow-inner font-mono">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent className="bg-slate-900 border-slate-800 text-white max-h-[200px]">
-                      {Array.from({ length: 24 }).map((_, i) => (
-                        <SelectItem key={i} value={i < 10 ? `0${i}` : `${i}`}>{i < 10 ? `0${i}` : `${i}`}</SelectItem>
-                      ))}
-                    </SelectContent>
-                   </Select>
-                   <Clock className="w-4 h-4 text-[#38bdf8] self-center mr-1" />
                 </div>
               </div>
               
-              <div className="space-y-2">
+              <div className="space-y-1.5 sm:space-y-2">
                 <Label className="text-[10px] font-black text-slate-500 uppercase tracking-widest mr-1">دپارتمان مسئول</Label>
                 <Select value={formData.departmentName} onValueChange={(val) => setFormData({...formData, departmentName: val})}>
-                  <SelectTrigger className="bg-slate-800/50 border-none h-12 rounded-2xl shadow-inner text-right">
+                  <SelectTrigger className="bg-slate-800/50 border-none h-11 sm:h-12 rounded-xl sm:rounded-2xl shadow-inner text-right text-xs sm:text-sm">
                     <SelectValue placeholder="انتخاب دپارتمان" />
                   </SelectTrigger>
                   <SelectContent className="bg-slate-900 border-slate-800 text-white text-right">
@@ -360,19 +438,19 @@ export default function Compliance() {
                 </Select>
                 {formData.departmentName === "CUSTOM" && (
                   <Input 
-                    placeholder="نام دپارتمان را وارد کنید" 
-                    className="mt-3 bg-slate-800/50 border-none h-12 rounded-2xl shadow-inner" 
+                    placeholder="نام دپارتمان سفارشی" 
+                    className="mt-2 bg-slate-800/50 border-none h-10 sm:h-12 rounded-xl sm:rounded-2xl shadow-inner text-xs px-4" 
                     value={formData.customDepartment}
                     onChange={(e) => setFormData({...formData, customDepartment: e.target.value})}
                   />
                 )}
               </div>
 
-              <div className="space-y-2">
-                <Label className="text-[10px] font-black text-slate-500 uppercase tracking-widest mr-1">کارشناس مسئول</Label>
+              <div className="space-y-1.5 sm:space-y-2">
+                <Label className="text-[10px] font-black text-slate-500 uppercase tracking-widest mr-1">مخاطب (تایید کننده)</Label>
                 <Select value={formData.assignedPersonId} onValueChange={(val) => setFormData({...formData, assignedPersonId: val})}>
-                  <SelectTrigger className="bg-slate-800/50 border-none h-12 rounded-2xl shadow-inner text-right">
-                    <SelectValue placeholder="انتخاب کارشناس" />
+                  <SelectTrigger className="bg-slate-800/50 border-none h-11 sm:h-12 rounded-xl sm:rounded-2xl shadow-inner text-right text-xs sm:text-sm">
+                    <SelectValue placeholder="انتخاب مسئول" />
                   </SelectTrigger>
                   <SelectContent className="bg-slate-900 border-slate-800 text-white text-right">
                     {users.map(u => (
@@ -382,27 +460,30 @@ export default function Compliance() {
                 </Select>
               </div>
 
-              <div className="space-y-2 md:col-span-2">
-                <Label className="text-[10px] font-black text-slate-500 uppercase tracking-widest mr-1">دستور جلسه / هدف نهایی</Label>
+              <div className="space-y-1.5 sm:space-y-2 md:col-span-2">
+                <Label className="text-[10px] font-black text-slate-500 uppercase tracking-widest mr-1">هدف از مراجعه (شرح مختصر)</Label>
                 <Input 
                   value={formData.purpose}
                   onChange={(e) => setFormData({...formData, purpose: e.target.value})}
-                  className="bg-slate-800/50 border-none h-14 rounded-2xl shadow-inner text-sm" 
+                  className="bg-slate-800/50 border-none h-12 sm:h-14 rounded-xl sm:rounded-2xl shadow-inner text-[11px] sm:text-sm px-4" 
                   placeholder="مثلا: پیگیری ترخیص محموله LS-9801"
                 />
               </div>
             </div>
 
-            <div className="space-y-4">
-              <Label className="text-[10px] font-black text-[#38bdf8] uppercase tracking-widest mr-1">پروتکل مستندات مورد نیاز</Label>
-              <div className="bg-slate-800/30 p-5 rounded-[2rem] space-y-3 border border-slate-800/50">
+            <div className="space-y-3 sm:space-y-4">
+              <Label className="text-[10px] font-black text-[#38bdf8] uppercase tracking-widest mr-1 flex items-center gap-1.5">
+                <FileCheck className="w-3.5 h-3.5" />
+                پروتکل مستندات همراه
+              </Label>
+              <div className="bg-slate-800/30 p-3 sm:p-5 rounded-2xl sm:rounded-[2rem] space-y-2.5 sm:space-y-3 border border-slate-800/50">
                 {documentChecklist.map((doc, idx) => (
-                  <div key={doc.id} className="flex items-center gap-4 group/doc">
+                  <div key={doc.id} className="flex items-center gap-2 sm:gap-4 group/doc">
                     <Checkbox id={`check-${doc.id}`} checked={doc.required} onCheckedChange={(checked) => {
                        const newDocs = [...documentChecklist];
                        newDocs[idx].required = !!checked;
                        setDocumentChecklist(newDocs);
-                    }} className="data-[state=checked]:bg-[#38bdf8] border-slate-700" />
+                    }} className="data-[state=checked]:bg-[#38bdf8] border-slate-700 h-4.5 w-4.5 rounded-md" />
                     <Input 
                       value={doc.name} 
                       onChange={(e) => {
@@ -410,10 +491,9 @@ export default function Compliance() {
                         newDocs[idx].name = e.target.value;
                         setDocumentChecklist(newDocs);
                       }}
-                      className="h-10 bg-slate-900/50 border-none text-xs text-slate-100 px-4 rounded-xl shadow-sm group-hover/doc:bg-slate-900 transition-all"
+                      className="h-8 sm:h-10 bg-slate-900/50 border-none text-[10px] sm:text-xs text-slate-100 px-3 rounded-lg sm:rounded-xl shadow-sm focus:bg-slate-900 transition-all flex-1"
                     />
-                    {doc.required && <Badge variant="outline" className="text-[8px] font-black h-4.5 border-amber-500/30 bg-amber-500/5 text-amber-500 whitespace-nowrap">پروتکل الزامی</Badge>}
-                    <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-600 hover:text-rose-500" onClick={() => setDocumentChecklist(documentChecklist.filter((_, i) => i !== idx))}>
+                    <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-700 hover:text-rose-500" onClick={() => setDocumentChecklist(documentChecklist.filter((_, i) => i !== idx))}>
                        <Trash2 className="w-3.5 h-3.5" />
                     </Button>
                   </div>
@@ -421,20 +501,20 @@ export default function Compliance() {
                 <Button 
                   variant="ghost" 
                   size="sm" 
-                  className="text-[10px] font-black text-slate-500 p-0 hover:bg-transparent h-6 hover:text-[#38bdf8] transition-colors"
+                  className="text-[9px] sm:text-[10px] font-black text-slate-600 p-0 hover:bg-transparent h-6 hover:text-[#38bdf8] transition-colors"
                   onClick={() => setDocumentChecklist([...documentChecklist, { id: `d${Date.now()}`, name: "عنوان مدرک جدید", required: false, completed: false }])}
                 >
-                  <Plus className="w-3 h-3 ml-1" />
-                  افزودن پارامتر کنترلی جدید
+                  <Plus className="w-2.5 h-2.5 sm:w-3 sm:h-3 ml-1.5" />
+                  افزودن پارامتر کنترلی
                 </Button>
               </div>
             </div>
 
-            <DialogFooter className="mt-8 flex gap-3">
-              <Button onClick={handleSaveAppointment} className="flex-[2] bg-[#38bdf8] text-slate-950 font-black hover:bg-[#0ea5e9] h-14 rounded-2xl shadow-xl shadow-[#38bdf8]/10">
-                {editingAppointment ? "تایید تغییرات و ثبت نهایی" : "تایید نوبت و ثبت در تقویم"}
+            <DialogFooter className="mt-6 sm:mt-10 flex flex-col sm:flex-row gap-2 sm:gap-4">
+              <Button onClick={handleSaveAppointment} className="w-full sm:flex-[2] bg-[#38bdf8] text-slate-950 font-black hover:bg-[#38bdf8]/90 h-12 sm:h-14 rounded-xl sm:rounded-2xl shadow-xl shadow-[#38bdf8]/10 text-xs sm:text-sm order-1 sm:order-2">
+                {editingAppointment ? "بروزرسانی نوبت" : "تایید و ثبت نوبت در سیستم"}
               </Button>
-              <Button variant="ghost" onClick={() => setIsAddOpen(false)} className="flex-1 text-slate-500 h-14 font-bold">لغو عملیات</Button>
+              <Button variant="ghost" onClick={() => setIsAddOpen(false)} className="w-full sm:flex-1 text-slate-500 h-12 sm:h-14 font-black text-xs sm:text-sm order-2 sm:order-1 transition-all hover:bg-slate-800/50">لغو</Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
@@ -548,7 +628,7 @@ export default function Compliance() {
                                 <span>{app.requiredDocuments.filter(d => d.completed).length}/{app.requiredDocuments.length} مدارک تایید شده</span>
                               </div>
                            </div>
-                           <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-all translate-x-4 group-hover:translate-x-0">
+                           <div className="flex gap-2 opacity-100 transition-all translate-x-0">
                               <Button variant="ghost" size="icon" className="h-8 w-8 rounded-xl hover:bg-[#38bdf8]/10 hover:text-[#38bdf8]" onClick={(e) => { e.stopPropagation(); handleOpenEdit(app); }}>
                                  <Edit3 className="w-4 h-4" />
                               </Button>
@@ -591,31 +671,53 @@ export default function Compliance() {
                    <CardContent className="p-8 pt-4 space-y-8">
                       <div className="space-y-4">
                          <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest block mr-1">وضعیت مستندات جلسه</label>
-                         <div className="space-y-3 bg-slate-800/40 p-6 rounded-[2rem] border border-white/5 shadow-inner">
-                            {selectedAppointment.requiredDocuments.map((doc) => (
-                              <div 
-                                key={doc.id} 
-                                className="flex items-center justify-between group/item py-1"
-                                onClick={() => toggleDocument(selectedAppointment.id, doc.id)}
-                              >
-                                 <div className="flex items-center gap-3 cursor-pointer">
-                                    <div className={cn(
-                                       "w-5 h-5 rounded-lg flex items-center justify-center transition-all border",
-                                       doc.completed ? "bg-emerald-500 border-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.3)]" : "border-slate-700 bg-slate-900 group-hover/item:border-[#38bdf8]/40"
-                                    )}>
-                                      {doc.completed && <CheckCircle2 className="w-3.5 h-3.5 text-slate-950 stroke-[3]" />}
-                                    </div>
-                                    <span className={cn(
-                                      "text-xs font-bold transition-all",
-                                      doc.completed ? "text-slate-500 line-through opacity-50" : "text-slate-100"
-                                    )}>{doc.name}</span>
-                                 </div>
-                                 {doc.required && !doc.completed && (
-                                   <div className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
-                                 )}
+                    <input 
+                      type="file" 
+                      ref={fileInputRef} 
+                      className="hidden" 
+                      onChange={handleDocumentUpload}
+                    />
+                    <div className="space-y-3 bg-slate-800/40 p-6 rounded-[2rem] border border-white/5 shadow-inner">
+                      {selectedAppointment.requiredDocuments.map((doc) => (
+                        <div 
+                          key={doc.id} 
+                          className="flex items-center justify-between group/item py-2"
+                        >
+                           <div className="flex items-center gap-3 cursor-pointer" onClick={() => toggleDocument(selectedAppointment.id, doc.id)}>
+                              <div className={cn(
+                                 "w-5 h-5 rounded-lg flex items-center justify-center transition-all border",
+                                 doc.completed ? "bg-emerald-500 border-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.3)]" : "border-slate-700 bg-slate-900 group-hover/item:border-[#38bdf8]/40"
+                              )}>
+                                {doc.completed && <CheckCircle2 className="w-3.5 h-3.5 text-slate-950 stroke-[3]" />}
                               </div>
-                            ))}
-                         </div>
+                              <div className="flex flex-col">
+                                <span className={cn(
+                                  "text-xs font-bold transition-all",
+                                  doc.completed ? "text-slate-500 line-through opacity-50" : "text-slate-100"
+                                )}>{doc.name}</span>
+                                {doc.completed && doc.fileName && (
+                                  <span className="text-[9px] text-[#38bdf8] font-mono mt-0.5">{doc.fileName}</span>
+                                )}
+                              </div>
+                           </div>
+                           
+                           {!doc.completed ? (
+                             <Button 
+                               variant="ghost" 
+                               size="icon" 
+                               className="h-8 w-8 text-slate-500 hover:text-[#38bdf8] hover:bg-[#38bdf8]/10 rounded-lg"
+                               onClick={(e) => { e.stopPropagation(); triggerUpload(selectedAppointment.id, doc.id); }}
+                             >
+                               <Plus className="w-4 h-4" />
+                             </Button>
+                           ) : (
+                             <div className="flex items-center gap-2">
+                               <FileCheck className="w-4 h-4 text-emerald-500/50" />
+                             </div>
+                           )}
+                        </div>
+                      ))}
+                    </div>
                          <div className="px-2 space-y-2">
                            <div className="flex justify-between text-[9px] font-black text-[#38bdf8]">
                               <span>میزان پیشرفت مستندات</span>
@@ -631,7 +733,7 @@ export default function Compliance() {
                       <div className="space-y-3">
                          <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest block mr-1">گزارش و خروجی جلسه</label>
                          <textarea 
-                          className="w-full h-32 bg-slate-900 border-none rounded-[1.5rem] p-5 text-[11px] text-slate-200 focus:ring-2 focus:ring-[#38bdf8]/20 transition-all resize-none outline-none shadow-inner leading-relaxed"
+                          className="w-full h-32 bg-slate-900 border border-slate-700/60 rounded-[1.5rem] p-5 text-[11px] text-slate-200 focus:ring-2 focus:ring-[#38bdf8]/20 transition-all resize-none outline-none shadow-inner leading-relaxed"
                           placeholder="ثبت وقایع، توافقات و نتایج نهایی جلسات..."
                           value={selectedAppointment.outcome || ""}
                           onChange={(e) => updateOutcome(selectedAppointment.id, e.target.value)}
@@ -644,7 +746,7 @@ export default function Compliance() {
                             لیست اقدامات آتی (Next Steps)
                          </label>
                          <textarea 
-                          className="w-full h-24 bg-slate-900 border-none rounded-[1.5rem] p-5 text-[11px] text-slate-200 focus:ring-2 focus:ring-emerald-500/20 transition-all resize-none outline-none shadow-inner leading-relaxed"
+                          className="w-full h-24 bg-slate-900 border border-slate-700/60 rounded-[1.5rem] p-5 text-[11px] text-slate-200 focus:ring-2 focus:ring-emerald-500/20 transition-all resize-none outline-none shadow-inner leading-relaxed"
                           placeholder="وظایف محول شده و پیگیری‌های بعدی..."
                           value={selectedAppointment.nextActionItems || ""}
                           onChange={(e) => updateAppointment(selectedAppointment.id, { nextActionItems: e.target.value })}

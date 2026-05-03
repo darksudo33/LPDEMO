@@ -30,7 +30,7 @@ export const MobileBottomNav = () => {
             key={item.path}
             to={item.path}
             className={cn(
-              "relative flex flex-col items-center justify-center gap-1.5 min-w-[60px] h-full transition-all group",
+              "relative flex flex-col items-center justify-center gap-1 min-w-0 flex-1 h-full transition-all group",
               isActive ? "text-[#38bdf8]" : "text-slate-500 hover:text-slate-300"
             )}
           >

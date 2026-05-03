@@ -8,6 +8,8 @@ import { Package, TrendingUp, CheckCircle, Clock, AlertTriangle, Ship, Calculato
 import { Link, useNavigate } from "react-router-dom";
 import { motion } from "motion/react";
 
+import { format, parse, differenceInSeconds } from "date-fns-jalali";
+
 const QuickAccessButton = ({ icon: Icon, label, path }: any) => {
   const navigate = useNavigate();
   return (
@@ -110,7 +112,7 @@ export default function Dashboard() {
     },
     { 
       title: "وظایف امروز", 
-      value: tasks.filter(t => t.status !== 'DONE').length.toLocaleString('fa-IR'), 
+      value: tasks.filter(t => t.status !== 'DONE' && t.dueDate === format(new Date(), "yyyy/MM/dd")).length.toLocaleString('fa-IR'), 
       icon: CheckCircle, 
       change: `${tasks.filter(t => t.status === 'DONE').length} مورد تکمیل شده`, 
       up: true, 
@@ -127,20 +129,45 @@ export default function Dashboard() {
     },
   ], [shipments, tasks]);
 
-  const criticalShipments = React.useMemo(() => {
-    // For demo purposes, we'll assign some random "days remaining" to make it look active
-    const daysMap: Record<string, number> = {
-      's2': 1.5, // 1 day, 12 hours
-      's3': 3.2, // 3 days, 4 hours
-      's1': 5.8  // 5 days, 19 hours
-    };
+  React.useEffect(() => {
+    // Alert employee about today's tasks or overdue tasks
+    const today = format(new Date(), "yyyy/MM/dd");
+    const todayTasks = tasks.filter(t => 
+      t.assignedToUserId === currentUser?.id && 
+      t.status !== 'DONE' && 
+      t.dueDate === today
+    );
+    
+    if (todayTasks.length > 0) {
+      import("sonner").then(({ toast }) => {
+        toast.info(`شما ${todayTasks.length.toLocaleString('fa-IR')} وظیفه برای امروز دارید.`, {
+          description: "لطفا لیست وظایف خود را چک کنید.",
+          duration: 5000,
+          position: "bottom-right"
+        });
+      });
+    }
+  }, [tasks, currentUser]);
 
+  const criticalShipments = React.useMemo(() => {
     return shipments
       .filter(s => ['ARRIVED', 'CUSTOMS', 'IN_TRANSIT'].includes(s.status))
-      .map(s => ({
-        ...s,
-        daysRemaining: daysMap[s.id] || (Math.random() * 10 + 5)
-      }))
+      .map(s => {
+        let daysRem = 5; // default
+        try {
+          if (s.estimatedDelivery) {
+            const delivery = parse(s.estimatedDelivery, "yyyy/MM/dd", new Date());
+            const diffSeconds = differenceInSeconds(delivery, new Date());
+            daysRem = diffSeconds / (24 * 3600);
+          }
+        } catch (e) {
+          daysRem = Math.random() * 5 + 1;
+        }
+        return {
+          ...s,
+          daysRemaining: Math.max(0, daysRem)
+        };
+      })
       .sort((a, b) => a.daysRemaining - b.daysRemaining)
       .slice(0, 3);
   }, [shipments]);
@@ -156,11 +183,6 @@ export default function Dashboard() {
           <p className="text-[10px] md:text-xs font-bold text-slate-500 mt-1 uppercase tracking-tight">
             آخرین وضعیت عملیاتی و لجستیکی امروز را بررسی کنید
           </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Badge className="bg-[#1e293b] text-slate-300 border-none px-3 py-1 text-[10px] font-black uppercase">
-            {new Date().toLocaleDateString('fa-IR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
-          </Badge>
         </div>
       </div>
 

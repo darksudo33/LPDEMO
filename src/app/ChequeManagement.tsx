@@ -19,7 +19,7 @@ import {
   DollarSign,
   Briefcase
 } from "lucide-react";
-import { format } from "date-fns-jalali";
+import { format, parse } from "date-fns-jalali";
 import { useMockStore } from "@/src/store/useMockStore";
 import { Cheque, ChequeStatus } from "../types";
 import { Button } from "@/components/ui/button";
@@ -39,8 +39,7 @@ const ChequeTimer = ({ targetDate }: { targetDate: string }) => {
   useEffect(() => {
     const calculate = () => {
       try {
-        const [year, month, day] = targetDate.split("/").map(Number);
-        const targetTime = new Date(year + 621, month - 1, day).getTime(); 
+        const targetTime = parse(targetDate, "yyyy/MM/dd", new Date()).getTime(); 
         const nowTime = new Date().getTime();
         setTimeLeft(Math.max(0, Math.floor((targetTime - nowTime) / 1000)));
       } catch (e) {
@@ -91,7 +90,7 @@ export default function ChequeManagement() {
       c.receiver.toLowerCase().includes(searchTerm.toLowerCase()) ||
       c.location.toLowerCase().includes(searchTerm.toLowerCase());
     
-    const matchesFilter = filterStatus === "ALL" || (filterStatus !== "ALL" && c.status === filterStatus);
+    const matchesFilter = filterStatus === "ALL" ? c.status !== "ARCHIVED" : c.status === filterStatus;
     
     return matchesSearch && matchesFilter;
   });
@@ -178,10 +177,10 @@ export default function ChequeManagement() {
       {/* Stats Quick Dashboard */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {[
-          { label: "مجموع چک‌های فعال", val: cheques.filter(c => c.status === "ACTIVE").length, icon: CreditCard, color: "text-[#38bdf8]" },
-          { label: "سررسید ماه جاری", val: cheques.filter(c => c.dueDate.includes("/02/")).length, icon: CalendarIcon, color: "text-amber-500" },
-          { label: "مبلغ کل در گردش", val: (cheques.filter(c => c.status === "ACTIVE").reduce((acc, c) => acc + c.amount, 0) / 1000000).toLocaleString() + " م", icon: DollarSign, color: "text-emerald-500" },
-          { label: "نیاز به بازپس‌گیری", val: 2, icon: AlertCircle, color: "text-rose-500" },
+          { label: "چک‌های در جریان (Ongoing)", val: cheques.filter(c => c.status === "ACTIVE").length, icon: CreditCard, color: "text-[#38bdf8]" },
+          { label: "سررسید ماه جاری", val: cheques.filter(c => c.status !== "ARCHIVED" && c.dueDate.includes("/02/")).length, icon: CalendarIcon, color: "text-amber-500" },
+          { label: "مبلغ در جریان", val: (cheques.filter(c => c.status === "ACTIVE").reduce((acc, c) => acc + c.amount, 0) / 1000000).toLocaleString() + " م", icon: DollarSign, color: "text-emerald-500" },
+          { label: "نیاز به بازپس‌گیری (برگشتی)", val: cheques.filter(c => c.status === "RETURNED").length, icon: AlertCircle, color: "text-rose-500" },
         ].map((stat, i) => (
           <Card key={i} className="bg-slate-900/40 border-slate-800/50 shadow-xl overflow-hidden group">
             <CardContent className="p-6 flex items-center justify-between">
@@ -229,7 +228,7 @@ export default function ChequeManagement() {
           </div>
         </div>
 
-        <div className="flex flex-col gap-4">
+        <div className="flex flex-col gap-3 md:gap-4">
           <AnimatePresence>
             {filteredCheques.map((chq) => (
               <motion.div
@@ -240,82 +239,138 @@ export default function ChequeManagement() {
                 exit={{ opacity: 0, scale: 0.95 }}
                 transition={{ duration: 0.2 }}
               >
-                <Card className="bg-slate-900/40 border-slate-800/80 hover:border-[#38bdf8]/30 transition-all rounded-3xl overflow-hidden group shadow-lg flex items-center p-3 md:p-5 relative">
+                <Card className="bg-slate-900/40 border-slate-800/80 hover:border-[#38bdf8]/30 transition-all rounded-xl md:rounded-3xl overflow-hidden group shadow-lg flex items-center p-2 md:p-5 relative">
                   {/* Status Indicator Bar */}
                   <div className={cn(
-                    "absolute right-0 top-0 bottom-0 w-1.5",
-                    chq.status === "ACTIVE" ? "bg-[#38bdf8]/40" : 
-                    chq.status === "CLEARED" ? "bg-emerald-500/40" : 
-                    chq.status === "RETURNED" ? "bg-rose-500/40" : "bg-slate-700/40"
+                    "absolute right-0 top-0 bottom-0 w-1 md:w-1.5",
+                    chq.status === "ACTIVE" ? "bg-[#38bdf8]" : 
+                    chq.status === "CLEARED" ? "bg-emerald-500" : 
+                    chq.status === "RETURNED" ? "bg-rose-500" : "bg-slate-700"
                   )} />
                   
-                  <div className="flex flex-col md:flex-row items-center gap-4 md:gap-8 flex-1 w-full text-right">
-                    {/* Icon Container */}
-                    <div className="w-12 h-12 bg-slate-800 rounded-2xl flex items-center justify-center text-[#38bdf8] border border-slate-700 shrink-0 shadow-inner group-hover:scale-105 transition-transform">
-                      <Briefcase className="w-6 h-6" />
+                  <div className="flex items-center gap-2 md:gap-8 flex-1 w-full text-right overflow-hidden">
+                    {/* Icon Container - Smaller on mobile */}
+                    <div className="w-9 h-9 md:w-12 md:h-12 bg-slate-800 rounded-lg md:rounded-2xl flex items-center justify-center text-[#38bdf8] border border-slate-700 shrink-0 shadow-inner group-hover:scale-105 transition-transform">
+                      <Briefcase className="w-4 h-4 md:w-6 md:h-6" />
                     </div>
 
-                    {/* Bank and Number */}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-3 mb-1">
-                        <h3 className="text-lg font-black text-slate-100 group-hover:text-[#38bdf8] transition-colors truncate">
+                    {/* Bank and Main Info */}
+                    <div className="flex-1 min-w-0 pr-1">
+                      <div className="flex items-center gap-2 mb-0.5">
+                        <h3 className="text-[11px] md:text-lg font-black text-slate-100 group-hover:text-[#38bdf8] transition-colors truncate">
                           {chq.bankName}
                         </h3>
-                        <Badge className={cn(
-                          "hidden sm:inline-flex text-[9px] font-black px-2 py-0.5 rounded-lg border",
-                          chq.status === "ACTIVE" && "bg-blue-500/10 text-blue-400 border-blue-500/20",
-                          chq.status === "CLEARED" && "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
-                          chq.status === "RETURNED" && "bg-rose-500/10 text-rose-400 border-rose-500/20"
-                        )}>
-                          {chq.status === "ACTIVE" ? "در جریان" : chq.status === "CLEARED" ? "پاس شده" : "برگشتی"}
-                        </Badge>
+                        <div className="hidden md:block">
+                          <Select 
+                            value={chq.status} 
+                            onValueChange={(v) => {
+                              updateCheque(chq.id, { status: v as ChequeStatus });
+                              toast.success("وضعیت چک بروزرسانی شد.");
+                            }}
+                          >
+                            <SelectTrigger className={cn(
+                              "h-7 w-28 text-[9px] font-black px-2 py-0.5 rounded-lg border bg-transparent",
+                              chq.status === "ACTIVE" && "text-blue-400 border-blue-500/20 hover:bg-blue-500/5",
+                              chq.status === "CLEARED" && "text-emerald-400 border-emerald-500/20 hover:bg-emerald-500/5",
+                              chq.status === "RETURNED" && "text-rose-400 border-rose-500/20 hover:bg-rose-500/5",
+                              chq.status === "ARCHIVED" && "text-slate-400 border-slate-500/20 hover:bg-slate-500/5"
+                            )}>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent className="bg-slate-900 border-slate-800 text-white">
+                              <SelectItem value="ACTIVE">
+                                <div className="flex items-center gap-2">
+                                  <div className="w-2 h-2 rounded-full bg-blue-500" />
+                                  <span>در جریان</span>
+                                </div>
+                              </SelectItem>
+                              <SelectItem value="CLEARED">
+                                <div className="flex items-center gap-2">
+                                  <div className="w-2 h-2 rounded-full bg-emerald-500" />
+                                  <span>پاس شده</span>
+                                </div>
+                              </SelectItem>
+                              <SelectItem value="RETURNED">
+                                <div className="flex items-center gap-2">
+                                  <div className="w-2 h-2 rounded-full bg-rose-500" />
+                                  <span>برگشتی</span>
+                                </div>
+                              </SelectItem>
+                              <SelectItem value="ARCHIVED">
+                                <div className="flex items-center gap-2">
+                                  <div className="w-2 h-2 rounded-full bg-slate-500" />
+                                  <span>بایگانی</span>
+                                </div>
+                              </SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
                       </div>
-                      <p className="text-xs text-slate-500 font-bold truncate tracking-wider">شماره چک: {chq.chequeNumber}</p>
+                      <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                        <p className="text-[8px] md:text-xs text-slate-500 font-bold truncate tracking-wider">ش.چک: {chq.chequeNumber}</p>
+                        <div className="flex items-center gap-1 md:hidden">
+                           <Clock className="w-2.5 h-2.5 text-amber-500" />
+                           <span className="text-[8px] font-bold text-amber-500">{chq.dueDate}</span>
+                        </div>
+                      </div>
                     </div>
 
-                    {/* Stats/Details Desktop Only */}
-                    <div className="hidden lg:flex flex-row items-center gap-10 text-slate-400 font-bold shrink-0">
-                       <div className="flex flex-col items-center gap-1">
-                         <span className="text-[9px] text-slate-600 uppercase tracking-widest">گیرنده</span>
-                         <span className="text-xs">{chq.receiver}</span>
-                       </div>
-                       <div className="flex flex-col items-center gap-1">
-                         <span className="text-[9px] text-slate-600 uppercase tracking-widest">مبلغ نهایی</span>
-                         <span className="text-xs text-[#38bdf8]">{chq.amount.toLocaleString()} ریال</span>
-                       </div>
-                       <div className="flex flex-col items-center gap-1">
-                         <span className="text-[9px] text-slate-600 uppercase tracking-widest">محل نگهداری</span>
-                         <span className="text-xs">{chq.location}</span>
+                    {/* Amount & Status (Mobile) */}
+                    <div className="flex flex-col items-end gap-1 shrink-0 ml-1">
+                       <span className="text-[10px] md:text-lg font-black text-white">{chq.amount.toLocaleString()} <span className="text-[7px] md:text-xs font-medium text-slate-600">ریال</span></span>
+                       <div className="md:hidden">
+                          <Badge className={cn(
+                            "text-[7px] font-black h-3.5 px-1 bg-transparent border",
+                            chq.status === "ACTIVE" ? "text-[#38bdf8] border-[#38bdf8]/20" : 
+                            chq.status === "CLEARED" ? "text-emerald-500 border-emerald-500/20" : 
+                            chq.status === "RETURNED" ? "text-rose-500 border-rose-500/20" : "text-slate-600 border-slate-700"
+                          )}>
+                             {chq.status === "ACTIVE" ? "در جریان" : chq.status === "CLEARED" ? "پاس شده" : chq.status === "RETURNED" ? "برگشتی" : "بایگانی"}
+                          </Badge>
                        </div>
                     </div>
 
-                    {/* Timer and Due Date */}
-                    <div className="flex flex-col items-center md:items-end gap-2 shrink-0 border-t md:border-t-0 md:border-r border-slate-800/50 pt-4 md:pt-0 md:pr-4 w-full md:w-auto">
+                    {/* Due Date & Timer (Desktop) */}
+                    <div className="hidden md:flex flex-col items-end gap-2 shrink-0 border-r border-slate-800/50 pr-4 w-40">
                         <div className="flex items-center gap-2">
                            <CalendarIcon className="w-3.5 h-3.5 text-slate-500" />
                            <span className="text-xs font-mono font-bold text-slate-400">{chq.dueDate}</span>
                         </div>
-                        <ChequeTimer targetDate={chq.dueDate} />
+                        {chq.status === "ACTIVE" && <ChequeTimer targetDate={chq.dueDate} />}
+                        {chq.status === "CLEARED" && <Badge variant="outline" className="bg-emerald-500/10 text-emerald-500 border-none text-[8px] font-black">تسویه شده</Badge>}
+                        {chq.status === "RETURNED" && <Badge variant="outline" className="bg-rose-500/10 text-rose-500 border-none text-[8px] font-black">برگشت خورده</Badge>}
+                    </div>
+
+                    {/* Desktop Only Information */}
+                    <div className="hidden lg:flex flex-row items-center gap-8 text-slate-400 font-bold shrink-0">
+                       <div className="flex flex-col items-center gap-0.5 min-w-[80px]">
+                         <span className="text-[8px] text-slate-600 uppercase tracking-widest">گیرنده</span>
+                         <span className="text-[10px] truncate max-w-[80px]">{chq.receiver}</span>
+                       </div>
+                       <div className="flex flex-col items-center gap-0.5 min-w-[80px]">
+                         <span className="text-[8px] text-slate-600 uppercase tracking-widest">محل</span>
+                         <span className="text-[10px] truncate max-w-[80px]">{chq.location}</span>
+                       </div>
                     </div>
 
                     {/* Actions */}
-                    <div className="flex items-center gap-2 justify-center md:justify-end shrink-0">
+                    <div className="flex items-center gap-1 md:gap-2 shrink-0 pr-1">
                       {(chq.status === "CLEARED" || chq.status === "RETURNED") && (
                         <Button 
                           variant="ghost" 
                           size="icon" 
-                          className="h-10 w-10 rounded-2xl hover:bg-amber-500/10 hover:text-amber-500" 
+                          className="h-8 w-8 md:h-10 md:w-10 rounded-lg md:rounded-2xl hover:bg-amber-500/10 hover:text-amber-500" 
                           onClick={() => { archiveCheque(chq.id); toast.success("چک به بایگانی منتقل شد."); }}
                           title="انتقال به بایگانی"
                         >
-                          <Archive className="w-5 h-5" />
+                          <Archive className="w-4 h-4 md:w-5 md:h-5" />
                         </Button>
                       )}
-                      <Button variant="ghost" size="icon" className="h-10 w-10 rounded-2xl hover:bg-[#38bdf8]/10 hover:text-[#38bdf8]" onClick={() => handleOpenEdit(chq)}>
-                         <Edit3 className="w-5 h-5" />
+                      <Button variant="ghost" size="icon" className="h-8 w-8 md:h-10 md:w-10 rounded-lg md:rounded-2xl hover:bg-[#38bdf8]/10 hover:text-[#38bdf8]" onClick={() => handleOpenEdit(chq)}>
+                         <Edit3 className="w-4 h-4 md:w-5 md:h-5" />
                       </Button>
-                      <Button variant="ghost" size="icon" className="h-10 w-10 rounded-2xl hover:bg-rose-500/10 hover:text-rose-500" onClick={() => { deleteCheque(chq.id); toast.error("چک با موفقیت حذف شد."); }}>
-                         <Trash2 className="w-5 h-5" />
+                      <Button variant="ghost" size="icon" className="h-8 w-8 md:h-10 md:w-10 rounded-lg md:rounded-2xl hover:bg-rose-500/10 hover:text-rose-500" onClick={() => { deleteCheque(chq.id); toast.error("چک با موفقیت حذف شد."); }}>
+                         <Trash2 className="w-4 h-4 md:w-5 md:h-5" />
                       </Button>
                     </div>
                   </div>
@@ -328,115 +383,117 @@ export default function ChequeManagement() {
 
       {/* Add/Edit Modal */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="bg-slate-900 border-slate-800 text-slate-100 sm:max-w-xl rounded-[2.5rem] p-8 shadow-2xl" dir="rtl">
-          <DialogHeader className="mb-6">
-            <DialogTitle className="text-2xl font-black flex items-center gap-4">
-              <div className="p-3 bg-[#38bdf8]/10 rounded-2xl">
-                {editingCheque ? <Edit3 className="w-6 h-6 text-[#38bdf8]" /> : <Plus className="w-6 h-6 text-[#38bdf8]" />}
+        <DialogContent className="bg-slate-900 border-slate-800 text-slate-100 sm:max-w-xl rounded-2xl md:rounded-[2.5rem] p-0 overflow-hidden shadow-2xl flex flex-col max-h-[90vh]" dir="rtl">
+          <DialogHeader className="p-6 md:p-8 border-b border-slate-800 shrink-0">
+            <DialogTitle className="text-xl md:text-2xl font-black flex items-center gap-3 md:gap-4">
+              <div className="p-2 md:p-3 bg-[#38bdf8]/10 rounded-xl md:rounded-2xl shrink-0">
+                {editingCheque ? <Edit3 className="w-5 h-5 md:w-6 md:h-6 text-[#38bdf8]" /> : <Plus className="w-5 h-5 md:w-6 md:h-6 text-[#38bdf8]" />}
               </div>
               <div className="flex flex-col text-right">
                 <span>{editingCheque ? "ویرایش اطلاعات چک" : "ثبت چک جدید"}</span>
-                <span className="text-[10px] font-bold text-slate-500 mt-1 uppercase tracking-widest leading-none">Financial Control System</span>
+                <span className="text-[9px] md:text-[10px] font-bold text-slate-500 mt-1 uppercase tracking-widest leading-none">Financial Control System</span>
               </div>
             </DialogTitle>
           </DialogHeader>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="space-y-2">
-              <Label className="text-[10px] font-black text-slate-500 uppercase tracking-widest mr-1">بانک صادرکننده</Label>
-              <Input 
-                className="bg-slate-800/50 border-none h-12 text-sm focus:ring-1 focus:ring-[#38bdf8]/50 rounded-2xl shadow-inner" 
-                value={formData.bankName}
-                onChange={e => setFormData({...formData, bankName: e.target.value})}
-                placeholder="مثلا: بانک ملت شعبه مرکزی"
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <Label className="text-[10px] font-black text-slate-500 uppercase tracking-widest mr-1">شماره صیادی / چک</Label>
-              <Input 
-                className="bg-slate-800/50 border-none h-12 text-sm focus:ring-1 focus:ring-[#38bdf8]/50 rounded-2xl shadow-inner font-mono text-center" 
-                value={formData.chequeNumber}
-                onChange={e => setFormData({...formData, chequeNumber: e.target.value})}
-                placeholder="12345/6789"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label className="text-[10px] font-black text-slate-500 uppercase tracking-widest mr-1">مبلغ چک (ریال)</Label>
-              <div className="relative">
+          <div className="flex-1 overflow-y-auto p-6 md:p-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
+              <div className="space-y-2">
+                <Label className="text-[10px] font-black text-slate-500 uppercase tracking-widest mr-1">بانک صادرکننده</Label>
                 <Input 
-                  type="number"
-                  className="bg-slate-800/50 border-none h-12 text-sm focus:ring-1 focus:ring-[#38bdf8]/50 rounded-2xl shadow-inner pl-12" 
-                  value={formData.amount}
-                  onChange={e => setFormData({...formData, amount: e.target.value})}
+                  className="bg-slate-800/50 border-none h-11 md:h-12 text-sm focus:ring-1 focus:ring-[#38bdf8]/50 rounded-xl md:rounded-2xl shadow-inner" 
+                  value={formData.bankName}
+                  onChange={e => setFormData({...formData, bankName: e.target.value})}
+                  placeholder="مثلا: بانک ملت شعبه مرکزی"
                 />
-                <DollarSign className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-600" />
               </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label className="text-[10px] font-black text-slate-500 uppercase tracking-widest mr-1">تاریخ سررسید</Label>
-              <div className="relative">
+              
+              <div className="space-y-2">
+                <Label className="text-[10px] font-black text-slate-500 uppercase tracking-widest mr-1">شماره صیادی / چک</Label>
                 <Input 
-                  className="bg-slate-800/50 border-none h-12 text-sm focus:ring-1 focus:ring-[#38bdf8]/50 rounded-2xl shadow-inner font-mono text-center" 
-                  value={formData.dueDate}
-                  onChange={e => setFormData({...formData, dueDate: e.target.value})}
-                  placeholder="۱۴۰۳/۰۳/۱۵"
+                  className="bg-slate-800/50 border-none h-11 md:h-12 text-sm focus:ring-1 focus:ring-[#38bdf8]/50 rounded-xl md:rounded-2xl shadow-inner font-mono text-center" 
+                  value={formData.chequeNumber}
+                  onChange={e => setFormData({...formData, chequeNumber: e.target.value})}
+                  placeholder="12345/6789"
                 />
-                <CalendarIcon className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#38bdf8]" />
               </div>
-            </div>
 
-            <div className="space-y-2">
-              <Label className="text-[10px] font-black text-slate-500 uppercase tracking-widest mr-1">محل نگهداری فیزیکی</Label>
-              <Input 
-                className="bg-slate-800/50 border-none h-12 text-sm focus:ring-1 focus:ring-[#38bdf8]/50 rounded-2xl shadow-inner" 
-                value={formData.location}
-                onChange={e => setFormData({...formData, location: e.target.value})}
-                placeholder="مثلا: گاوصندوق شرکت هوپاد"
-              />
-            </div>
+              <div className="space-y-2">
+                <Label className="text-[10px] font-black text-slate-500 uppercase tracking-widest mr-1">مبلغ چک (ریال)</Label>
+                <div className="relative">
+                  <Input 
+                    type="number"
+                    className="bg-slate-800/50 border-none h-11 md:h-12 text-sm focus:ring-1 focus:ring-[#38bdf8]/50 rounded-xl md:rounded-2xl shadow-inner pl-12" 
+                    value={formData.amount}
+                    onChange={e => setFormData({...formData, amount: e.target.value})}
+                  />
+                  <DollarSign className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-600" />
+                </div>
+              </div>
 
-            <div className="space-y-2">
-              <Label className="text-[10px] font-black text-slate-500 uppercase tracking-widest mr-1">در وجه / گیرنده</Label>
-              <Input 
-                className="bg-slate-800/50 border-none h-12 text-sm focus:ring-1 focus:ring-[#38bdf8]/50 rounded-2xl shadow-inner" 
-                value={formData.receiver}
-                onChange={e => setFormData({...formData, receiver: e.target.value})}
-                placeholder="مثلا: سازمان بنادر و دریانوردی"
-              />
-            </div>
+              <div className="space-y-2">
+                <Label className="text-[10px] font-black text-slate-500 uppercase tracking-widest mr-1">تاریخ سررسید</Label>
+                <div className="relative">
+                  <Input 
+                    className="bg-slate-800/50 border-none h-11 md:h-12 text-sm focus:ring-1 focus:ring-[#38bdf8]/50 rounded-xl md:rounded-2xl shadow-inner font-mono text-center" 
+                    value={formData.dueDate}
+                    onChange={e => setFormData({...formData, dueDate: e.target.value})}
+                    placeholder="۱۴۰۳/۰۳/۱۵"
+                  />
+                  <CalendarIcon className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#38bdf8]" />
+                </div>
+              </div>
 
-            <div className="space-y-2 md:col-span-2">
-              <Label className="text-[10px] font-black text-slate-500 uppercase tracking-widest mr-1">وضعیت کنونی</Label>
-              <Select value={formData.status} onValueChange={(v) => setFormData({...formData, status: v as ChequeStatus})}>
-                <SelectTrigger className="bg-slate-800/50 border-none h-12 rounded-2xl shadow-inner text-right">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent className="bg-slate-900 border-slate-800 text-white">
-                  <SelectItem value="ACTIVE">در جریان (فعال)</SelectItem>
-                  <SelectItem value="CLEARED">پاس شده</SelectItem>
-                  <SelectItem value="RETURNED">برگشت خورده</SelectItem>
-                  <SelectItem value="ARCHIVED">بایگانی</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+              <div className="space-y-2">
+                <Label className="text-[10px] font-black text-slate-500 uppercase tracking-widest mr-1">محل نگهداری فیزیکی</Label>
+                <Input 
+                  className="bg-slate-800/50 border-none h-11 md:h-12 text-sm focus:ring-1 focus:ring-[#38bdf8]/50 rounded-xl md:rounded-2xl shadow-inner" 
+                  value={formData.location}
+                  onChange={e => setFormData({...formData, location: e.target.value})}
+                  placeholder="مثلا: گاوصندوق شرکت هوپاد"
+                />
+              </div>
 
-            <div className="space-y-2 md:col-span-2">
-              <Label className="text-[10px] font-black text-slate-500 uppercase tracking-widest mr-1">توضیحات تکمیلی</Label>
-              <textarea 
-                className="w-full bg-slate-800/50 border-none rounded-2xl p-4 text-sm min-h-[100px] outline-none focus:ring-1 focus:ring-[#38bdf8]/50 resize-none shadow-inner"
-                value={formData.description}
-                onChange={e => setFormData({...formData, description: e.target.value})}
-              />
+              <div className="space-y-2">
+                <Label className="text-[10px] font-black text-slate-500 uppercase tracking-widest mr-1">در وجه / گیرنده</Label>
+                <Input 
+                  className="bg-slate-800/50 border-none h-11 md:h-12 text-sm focus:ring-1 focus:ring-[#38bdf8]/50 rounded-xl md:rounded-2xl shadow-inner" 
+                  value={formData.receiver}
+                  onChange={e => setFormData({...formData, receiver: e.target.value})}
+                  placeholder="مثلا: سازمان بنادر و دریانوردی"
+                />
+              </div>
+
+              <div className="space-y-2 md:col-span-2">
+                <Label className="text-[10px] font-black text-slate-500 uppercase tracking-widest mr-1">وضعیت کنونی</Label>
+                <Select value={formData.status} onValueChange={(v) => setFormData({...formData, status: v as ChequeStatus})}>
+                  <SelectTrigger className="bg-slate-800/50 border-none h-11 md:h-12 rounded-xl md:rounded-2xl shadow-inner text-right">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="bg-slate-900 border-slate-800 text-white">
+                    <SelectItem value="ACTIVE">در جریان (فعال)</SelectItem>
+                    <SelectItem value="CLEARED">پاس شده</SelectItem>
+                    <SelectItem value="RETURNED">برگشت خورده</SelectItem>
+                    <SelectItem value="ARCHIVED">بایگانی</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2 md:col-span-2">
+                <Label className="text-[10px] font-black text-slate-500 uppercase tracking-widest mr-1">توضیحات تکمیلی</Label>
+                <textarea 
+                  className="w-full bg-slate-800/50 border-none rounded-xl md:rounded-2xl p-4 text-sm min-h-[100px] outline-none focus:ring-1 focus:ring-[#38bdf8]/50 resize-none shadow-inner"
+                  value={formData.description}
+                  onChange={e => setFormData({...formData, description: e.target.value})}
+                />
+              </div>
             </div>
           </div>
 
-          <DialogFooter className="gap-3 mt-8">
-            <Button variant="ghost" className="flex-1 text-slate-500 hover:text-white" onClick={() => setIsDialogOpen(false)}>انصراف</Button>
-            <Button className="flex-[2] bg-[#38bdf8] text-slate-950 font-black h-14 rounded-2xl shadow-xl shadow-[#38bdf8]/10" onClick={handleSubmit}>
-              {editingCheque ? "بروزرسانی اطلاعات" : "تایید و ثبت چک"}
+          <DialogFooter className="p-6 md:p-8 border-t border-slate-800 bg-slate-900/50 gap-3 shrink-0 flex-row">
+            <Button variant="ghost" className="flex-1 text-slate-500 hover:text-white rounded-xl md:rounded-2xl h-12 md:h-14 font-bold" onClick={() => setIsDialogOpen(false)}>انصراف</Button>
+            <Button className="flex-[2] bg-[#38bdf8] hover:bg-[#0284c7] text-slate-950 font-black h-12 md:h-14 rounded-xl md:rounded-2xl shadow-xl shadow-[#38bdf8]/10" onClick={handleSubmit}>
+              {editingCheque ? "بروزرسانی" : "تایید و ثبت"}
             </Button>
           </DialogFooter>
         </DialogContent>

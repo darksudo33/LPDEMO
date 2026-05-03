@@ -66,6 +66,7 @@ export interface Task {
   status: TaskStatus;
   priority: TaskPriority;
   dueDate: string;
+  deadline?: string; // Optional field for explicit time/date deadline
   shipmentId?: string;
   createdAt: string;
 }
@@ -187,6 +188,7 @@ export interface AppointmentDocument {
   name: string;
   required: boolean;
   completed: boolean;
+  fileName?: string;
 }
 
 export interface Appointment {

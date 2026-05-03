@@ -158,6 +158,21 @@ export default function QuotageManagement() {
     setShowAddForm(true);
   };
 
+  const handlePrint = (quote: Quote) => {
+    // Set a temporary title for the printed document
+    const originalTitle = document.title;
+    document.title = `Quotation_${quote.customerName}_${quote.id}`;
+    
+    // We'll use the browser's print functionality.
+    // The CSS @media print handles the visibility of the printable area.
+    window.print();
+    
+    // Restore title
+    setTimeout(() => {
+      document.title = originalTitle;
+    }, 1000);
+  };
+
   const handleCloseForm = () => {
     setShowAddForm(false);
     setEditingQuoteId(null);
@@ -277,7 +292,8 @@ export default function QuotageManagement() {
             </div>
           </CardHeader>
           <CardContent className="p-0">
-            <div className="overflow-x-auto">
+            {/* Desktop Table - Hidden on Mobile */}
+            <div className="hidden md:block overflow-x-auto">
               <table className="w-full text-right">
                 <thead className="bg-[#38bdf8]/5 text-slate-500 text-[10px] font-black uppercase tracking-wider">
                   <tr>
@@ -335,8 +351,13 @@ export default function QuotageManagement() {
                           <QuoteStatusBadge status={quote.status} />
                         </td>
                         <td className="px-6 py-4 text-left">
-                          <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-all">
-                            <Button variant="ghost" size="icon" className="w-8 h-8 rounded-lg hover:bg-[#1e293b] text-slate-400 hover:text-white">
+                          <div className="flex items-center justify-end gap-2 transition-all">
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              className="w-8 h-8 rounded-lg hover:bg-[#1e293b] text-slate-400 hover:text-white"
+                              onClick={() => handlePrint(quote)}
+                            >
                               <Printer className="w-4 h-4" />
                             </Button>
                             <Button 
@@ -362,6 +383,95 @@ export default function QuotageManagement() {
                   )}
                 </tbody>
               </table>
+            </div>
+
+            {/* Mobile List - Responsive Cards */}
+            <div className="md:hidden flex flex-col divide-y divide-[#1e293b]">
+              {filteredQuotes.length === 0 ? (
+                <div className="px-6 py-12 text-center text-slate-500 text-xs font-bold font-sans">
+                  هیچ استعلام قیمتی یافت نشد.
+                </div>
+              ) : (
+                filteredQuotes.map((quote) => (
+                  <div key={quote.id} className="p-4 space-y-4 hover:bg-[#1e293b]/20 transition-all relative overflow-hidden group">
+                    {/* Status accent */}
+                    <div className={cn(
+                      "absolute right-0 top-0 bottom-0 w-1",
+                      quote.status === "ACCEPTED" ? "bg-green-500" : 
+                      quote.status === "REJECTED" ? "bg-red-500" : 
+                      quote.status === "EXPIRED" ? "bg-amber-500" : "bg-slate-700"
+                    )} />
+
+                    <div className="flex items-start justify-between gap-4 pr-1">
+                      <div className="flex-1 min-w-0">
+                        <h4 className="text-[13px] font-black text-white truncate mb-1">{quote.customerName}</h4>
+                        <div className="flex items-center gap-1.5 text-[10px] text-slate-500 font-bold">
+                          <MapPin className="w-3 h-3 text-[#38bdf8]" />
+                          <span>{quote.originCity}</span>
+                          <ArrowRightLeft className="w-2.5 h-2.5 mx-0.5 opacity-50" />
+                          <span>{quote.destinationCity}</span>
+                        </div>
+                      </div>
+                      <QuoteStatusBadge status={quote.status} />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4 items-end bg-[#020617]/40 p-3 rounded-2xl border border-[#1e293b]/50">
+                      <div className="space-y-2">
+                        <CargoTypeBadge type={quote.cargoType} />
+                        <div className="flex items-center gap-1.5">
+                           <Layers className="w-3 h-3 text-slate-600" />
+                           <span className="text-[10px] text-slate-400 font-bold">{quote.weight} تن محموله</span>
+                        </div>
+                      </div>
+                      <div className="text-left space-y-1">
+                        <span className="block text-[8px] font-black text-slate-600 uppercase">قیمت کل استعلام</span>
+                        <span className="text-sm font-black text-emerald-500">{quote.totalPrice.toLocaleString('fa-IR')} <span className="text-[10px] text-slate-600 font-medium">ریال</span></span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-between pt-1">
+                      <div className="flex flex-col gap-1">
+                        <div className="flex items-center gap-1.5 text-[9px] text-slate-500 font-bold">
+                          <Calendar className="w-3 h-3" />
+                          ثبت: {format(new Date(quote.createdAt), "yyyy/MM/dd")}
+                        </div>
+                        <div className={cn("flex items-center gap-1.5 text-[9px] font-black", 
+                          new Date(quote.validUntil) < new Date() ? "text-red-500" : "text-blue-500")}>
+                          <Clock className="w-3 h-3" />
+                          اعتبار: {format(new Date(quote.validUntil), "yyyy/MM/dd")}
+                        </div>
+                      </div>
+                      
+                      <div className="flex items-center gap-1">
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="w-8 h-8 rounded-lg bg-[#1e293b]/50 text-slate-400"
+                          onClick={() => handlePrint(quote)}
+                        >
+                          <Printer className="w-3.5 h-3.5" />
+                        </Button>
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="w-8 h-8 rounded-lg bg-[#1e293b]/50 text-slate-400"
+                          onClick={() => handleEditClick(quote)}
+                        >
+                          <Edit className="w-3.5 h-3.5" />
+                        </Button>
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="w-8 h-8 rounded-lg bg-red-500/10 text-red-500 hover:bg-red-500/20"
+                          onClick={() => deleteQuote(quote.id)}
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
             </div>
           </CardContent>
         </Card>
@@ -626,6 +736,153 @@ export default function QuotageManagement() {
           </div>
         )}
       </AnimatePresence>
+
+      {/* Hidden Printable Areas for Quotes */}
+      <div className="hidden">
+        {quotes.map(quote => (
+          <div key={`print-${quote.id}`} id={`printable-quote-${quote.id}`} className="print-content p-10 font-sans rtl text-slate-900 bg-white min-h-screen">
+            <style>
+              {`
+                @media print {
+                  body * { visibility: hidden; }
+                  .print-content, .print-content * { visibility: visible; }
+                  .print-content { 
+                    position: absolute; 
+                    left: 0; 
+                    top: 0; 
+                    width: 100%; 
+                    display: block !important;
+                    background: white !important;
+                    color: black !important;
+                  }
+                  @page { size: auto; margin: 10mm; }
+                }
+              `}
+            </style>
+            
+            <div className="flex justify-between items-start border-b-2 border-slate-200 pb-8 mb-8">
+              <div>
+                <h1 className="text-3xl font-black mb-2 text-slate-900">پیش‌فاکتور لجستیک</h1>
+                <p className="text-sm text-slate-500 font-bold uppercase tracking-widest leading-none">Freight Quotation / Proforma Invoice</p>
+              </div>
+              <div className="text-left">
+                <div className="bg-slate-900 text-white px-4 py-2 rounded-lg font-black text-lg mb-2">LOGISHARP</div>
+                <div className="text-[10px] text-slate-500 font-bold">Quotation ID: {quote.id.toUpperCase()}</div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-10 mb-10">
+              <div className="space-y-4">
+                <h2 className="text-xs font-black text-slate-500 uppercase border-b border-slate-100 pb-1">اطلاعات مشتری (Client Details)</h2>
+                <div>
+                  <div className="text-lg font-black text-slate-900">{quote.customerName}</div>
+                  <div className="text-sm text-slate-600 font-mono mt-1">{quote.customerPhone}</div>
+                </div>
+              </div>
+              <div className="space-y-4">
+                <h2 className="text-xs font-black text-slate-500 uppercase border-b border-slate-100 pb-1">اطلاعات صدور (Issuance Info)</h2>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <div className="text-[10px] text-slate-400 font-bold">تاریخ صدور:</div>
+                    <div className="text-sm font-black">{format(new Date(quote.createdAt), "yyyy/MM/dd")}</div>
+                  </div>
+                  <div>
+                    <div className="text-[10px] text-red-500 font-bold">اعتبار تا:</div>
+                    <div className="text-sm font-black text-red-600">{format(new Date(quote.validUntil), "yyyy/MM/dd")}</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-slate-50 rounded-2xl p-6 mb-10">
+              <h3 className="text-xs font-black text-slate-400 uppercase mb-4">جزئیات محموله و مسیر (Cargo & Route)</h3>
+              <div className="grid grid-cols-4 gap-6">
+                <div>
+                  <div className="text-[9px] text-slate-400 font-bold mb-1">مبدأ:</div>
+                  <div className="text-sm font-black">{quote.originCity}</div>
+                </div>
+                <div>
+                  <div className="text-[9px] text-slate-400 font-bold mb-1">مقصد:</div>
+                  <div className="text-sm font-black">{quote.destinationCity}</div>
+                </div>
+                <div>
+                  <div className="text-[9px] text-slate-400 font-bold mb-1">نوع کالا:</div>
+                  <div className="text-sm font-black">{quote.cargoType === 'GENERAL' ? 'عمومی' : quote.cargoType === 'HAZARDOUS' ? 'خطرناک' : 'ویژه'}</div>
+                </div>
+                <div>
+                  <div className="text-[9px] text-slate-400 font-bold mb-1">وزن اعلامی:</div>
+                  <div className="text-sm font-black">{quote.weight} <span className="text-[10px] opacity-50">تن</span></div>
+                </div>
+              </div>
+            </div>
+
+            <div className="mb-10">
+              <table className="w-full">
+                <thead>
+                  <tr className="bg-slate-100 text-slate-500 text-[10px] font-black uppercase">
+                    <th className="px-4 py-3 text-right">شرح خدمت (Description)</th>
+                    <th className="px-4 py-3 text-left">مبلغ (Amount - IRR)</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 text-sm">
+                  <tr>
+                    <td className="px-4 py-4 text-slate-700 font-bold">نرخ پایه حمل نوبت اول</td>
+                    <td className="px-4 py-4 text-left font-mono">{quote.baseRate.toLocaleString()}</td>
+                  </tr>
+                  <tr>
+                    <td className="px-4 py-4 text-slate-700 font-bold">هزینه سوخت و الحاقیه انرژی</td>
+                    <td className="px-4 py-4 text-left font-mono">{quote.fuelSurcharge.toLocaleString()}</td>
+                  </tr>
+                  <tr>
+                    <td className="px-4 py-4 text-slate-700 font-bold">بارگیری، جابجایی و انبارداری</td>
+                    <td className="px-4 py-4 text-left font-mono">{quote.loadingFees.toLocaleString()}</td>
+                  </tr>
+                  <tr>
+                    <td className="px-4 py-4 text-slate-700 font-bold">عوارض جاده‌ای و مالیات محلی</td>
+                    <td className="px-4 py-4 text-left font-mono">{quote.tollFees.toLocaleString()}</td>
+                  </tr>
+                  <tr>
+                    <td className="px-4 py-4 text-slate-700 font-bold italic">حق بیمه کالا ({quote.insurancePercentage}%)</td>
+                    <td className="px-4 py-4 text-left font-mono">{Math.round((quote.baseRate + quote.fuelSurcharge + quote.loadingFees + quote.tollFees) * (quote.insurancePercentage / 100)).toLocaleString()}</td>
+                  </tr>
+                </tbody>
+                <tfoot>
+                  <tr className="bg-emerald-50 border-t-2 border-emerald-500/20">
+                    <td className="px-4 py-6 text-emerald-900 font-black text-lg">جمع کل استعلام (Nett Amount)</td>
+                    <td className="px-4 py-6 text-left text-emerald-600 font-black text-2xl font-mono">
+                      {quote.totalPrice.toLocaleString()} 
+                      <span className="text-[10px] mr-2">ریال</span>
+                    </td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+
+            <div className="grid grid-cols-1 gap-8">
+              <div className="border border-amber-100 bg-amber-50/30 rounded-xl p-6">
+                <h4 className="text-[10px] font-black text-amber-600 uppercase mb-2 flex items-center gap-2">
+                  <AlertCircle className="w-3 h-3" />
+                  یادداشت‌ها و شرایط (Terms & Conditions)
+                </h4>
+                <p className="text-[11px] text-slate-600 leading-relaxed font-medium">
+                  {quote.notes || "شرایط استاندارد حمل شرکت لجیشارپ برای این استعلام حاکم است. نرخ‌های فوق بر اساس اطلاعات ارائه شده توسط مشتری محاسبه شده و هرگونه تغییر در وزن یا ابعاد محموله، بر قیمت نهایی تاثیرگذار خواهد بود."}
+                </p>
+              </div>
+              
+              <div className="flex justify-between items-end mt-20 pt-10 border-t border-slate-100">
+                <div className="text-center w-48">
+                  <div className="text-[10px] text-slate-400 font-bold mb-10">مهر و امضای شرکت</div>
+                  <div className="h-20 w-full border border-dashed border-slate-200 rounded-lg flex items-center justify-center text-[10px] text-slate-300">STAMP AREA</div>
+                </div>
+                <div className="text-center w-48">
+                  <div className="text-[10px] text-slate-400 font-bold mb-10">تایید مشتری</div>
+                  <div className="h-1px w-full border-b border-slate-300"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

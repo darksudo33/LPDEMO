@@ -29,9 +29,54 @@ import Compliance from "./app/Compliance";
 import ChequeManagement from "./app/ChequeManagement";
 import ArchivePage from "./app/Archive";
 import QuotageManagement from "./app/QuotageManagement";
+import CustomerDetail from "./app/CustomerDetail";
+
+import { format } from "date-fns-jalali";
+
+const ComplianceSync = () => {
+  const currentUser = useMockStore(state => state.currentUser);
+  const appointments = useMockStore(state => state.appointments);
+  const updateAppointment = useMockStore(state => state.updateAppointment);
+  const addNotification = useMockStore(state => state.addNotification);
+
+  React.useEffect(() => {
+    if (!currentUser) return;
+
+    const todayStr = format(new Date(), "yyyy/MM/dd");
+    
+    // Check for today's appointments for current user that haven't sent a reminder
+    const todayApps = appointments.filter(app => 
+      app.assignedPersonId === currentUser.id && 
+      app.dateTime.startsWith(todayStr) && 
+      !app.reminderSent
+    );
+
+    if (todayApps.length > 0) {
+      todayApps.forEach(app => {
+        addNotification({
+          title: "یادآوری جلسه امروز",
+          message: `شما امروز یک جلسه دارید: ${app.purpose} (ساعت ${app.dateTime.split(' ')[1]})`,
+          type: "URGENT",
+          link: "/compliance"
+        });
+        updateAppointment(app.id, { reminderSent: true });
+      });
+    }
+  }, [currentUser, appointments, updateAppointment, addNotification]);
+
+  return null;
+};
 
 const ProtectedLayout = ({ children }: { children: React.ReactNode }) => {
   const currentUser = useMockStore(state => state.currentUser);
+  const { pathname } = useLocation();
+  const mainRef = React.useRef<HTMLElement>(null);
+
+  React.useEffect(() => {
+    if (mainRef.current) {
+      mainRef.current.scrollTo(0, 0);
+    }
+  }, [pathname]);
 
   if (!currentUser) {
     return <Navigate to="/" replace />;
@@ -39,10 +84,11 @@ const ProtectedLayout = ({ children }: { children: React.ReactNode }) => {
 
   return (
     <div className="flex h-screen bg-slate-950 text-slate-100 overflow-hidden" dir="rtl">
+      <ComplianceSync />
       <Sidebar />
       <div className="flex-1 flex flex-col min-w-0 h-full relative">
         <TopBar />
-        <main className="flex-1 overflow-y-auto w-full pb-16 lg:pb-0">
+        <main ref={mainRef} className="flex-1 overflow-y-auto w-full pb-16 lg:pb-0">
           {children}
         </main>
         <MobileBottomNav />
@@ -65,7 +111,8 @@ export default function App() {
           <Route path="/shipments/:id" element={<ProtectedLayout><ShipmentDetail /></ProtectedLayout>} />
           <Route path="/shipments/:id/edit" element={<ProtectedLayout><ShipmentEdit /></ProtectedLayout>} />
           <Route path="/changelog" element={<ProtectedLayout><ChangeLog /></ProtectedLayout>} />
-          <Route path="/customers/*" element={<ProtectedLayout><Customers /></ProtectedLayout>} />
+          <Route path="/customers" element={<ProtectedLayout><Customers /></ProtectedLayout>} />
+          <Route path="/customers/:id" element={<ProtectedLayout><CustomerDetail /></ProtectedLayout>} />
           <Route path="/tasks" element={<ProtectedLayout><Tasks /></ProtectedLayout>} />
           <Route path="/documents" element={<ProtectedLayout><Documents /></ProtectedLayout>} />
           <Route path="/compliance" element={<ProtectedLayout><Compliance /></ProtectedLayout>} />
